@@ -10,7 +10,7 @@
  * MiroTalk P2P - Client component
  *
  * @link    GitHub: https://github.com/miroslavpejic85/mirotalk
- * @link    Live demo: https://mirotalk.up.railway.app or https://mirotalk.herokuapp.com
+ * @link    Live demo: https://p2p.mirotalk.org or https://mirotalk.up.railway.app or https://mirotalk.herokuapp.com
  * @license For open source use: AGPLv3
  * @license For commercial or closed source, contact us at info.mirotalk@gmail.com
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
@@ -642,7 +642,21 @@ function initClientPeer() {
     }
 
     console.log('Connecting to signaling server');
-    signalingSocket = io(signalingServer);
+    //signalingSocket = io(signalingServer);
+
+    // Disable the HTTP long-polling transport
+    signalingSocket = io(signalingServer, {
+        transports: ['websocket'],
+    });
+
+    const transport = signalingSocket.io.engine.transport.name; // in most cases, "polling"
+    console.log('Connection transport', transport);
+
+    // Check upgrade transport
+    signalingSocket.io.engine.on('upgrade', () => {
+        const upgradedTransport = signalingSocket.io.engine.transport.name; // in most cases, "websocket"
+        console.log('Connection upgraded transport', upgradedTransport);
+    });
 
     // on receiving data from signaling server...
     signalingSocket.on('connect', handleConnect);
@@ -3077,6 +3091,7 @@ function toggleScreenSharing() {
             refreshMyLocalStream(screenStream);
             myVideo.classList.toggle('mirror');
             setScreenSharingStatus(isScreenStreaming);
+            if (isScreenStreaming) setMyVideoStatusTrue();
         })
         .catch((err) => {
             console.error('[Error] Unable to share the screen', err);
