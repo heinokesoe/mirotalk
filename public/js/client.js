@@ -631,6 +631,14 @@ function thereIsPeerConnections() {
 }
 
 /**
+ * Count the peer connections
+ * @returns peer connections count
+ */
+function countPeerConnections() {
+    return Object.keys(peerConnections).length;
+}
+
+/**
  * On body load Get started
  */
 function initClientPeer() {
@@ -3091,7 +3099,16 @@ function toggleScreenSharing() {
             refreshMyLocalStream(screenStream);
             myVideo.classList.toggle('mirror');
             setScreenSharingStatus(isScreenStreaming);
-            if (isScreenStreaming) setMyVideoStatusTrue();
+            if (isScreenStreaming) {
+                setMyVideoStatusTrue();
+                if (countPeerConnections() == 1) {
+                    emitPeersAction('screenStart');
+                    setAspectRatio(2); // 16:9
+                }
+            } else {
+                emitPeersAction('screenStop');
+                adaptAspectRatio();
+            }
         })
         .catch((err) => {
             console.error('[Error] Unable to share the screen', err);
@@ -4286,6 +4303,12 @@ function handlePeerAction(config) {
             break;
         case 'recStop':
             notifyRecording(peer_name, 'Stopped');
+            break;
+        case 'screenStart':
+            if (!isMobileDevice) setAspectRatio(2); // 16:9
+            break;
+        case 'screenStop':
+            if (!isMobileDevice) adaptAspectRatio();
             break;
     }
 }
