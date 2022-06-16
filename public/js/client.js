@@ -3614,7 +3614,7 @@ function sendChatMessage() {
         return;
     }
 
-    const msg = msgerInput.value;
+    const msg = checkMsg(msgerInput.value);
     // empity msg or
     if (!msg) return;
 
@@ -3723,8 +3723,6 @@ function appendMessage(from, img, side, msg, privateMsg) {
     // check if i receive a private message
     let msgBubble = privateMsg ? 'private-msg-bubble' : 'msg-bubble';
 
-    // console.log("chatMessages", chatMessages);
-    let cMsg = detectUrl(msg);
     const msgHTML = `
 	<div class="msg ${side}-msg">
 		<div class="msg-img" style="background-image: url('${img}')"></div>
@@ -3733,7 +3731,7 @@ function appendMessage(from, img, side, msg, privateMsg) {
                 <div class="msg-info-name">${from}</div>
                 <div class="msg-info-time">${time}</div>
             </div>
-            <div class="msg-text">${cMsg}</div>
+            <div class="msg-text">${msg}</div>
         </div>
 	</div>
     `;
@@ -3832,8 +3830,11 @@ function addMsgerPrivateBtn(msgerPrivateBtn, msgerPrivateMsgInput) {
     });
 
     function sendPrivateMessage() {
-        let pMsg = msgerPrivateMsgInput.value;
-        if (!pMsg) return;
+        let pMsg = checkMsg(msgerPrivateMsgInput.value);
+        if (!pMsg) {
+            msgerPrivateMsgInput.value = '';
+            return;
+        }
         let toPeerName = msgerPrivateBtn.value;
         emitMsg(myPeerName, toPeerName, pMsg, true);
         appendMessage(myPeerName, rightChatAvatar, 'right', pMsg + '<br/><hr>Private message to ' + toPeerName, true);
@@ -3843,16 +3844,45 @@ function addMsgerPrivateBtn(msgerPrivateBtn, msgerPrivateMsgInput) {
 }
 
 /**
- * Detect url from text and make it clickable and if url is a img to create preview of it
+ * Check Message
+ * Detect url from text and make it clickable
+ * If url is a img to create preview of it
+ * Prevent XSS (strip html part)
  * @param {string} text passed text
  * @returns {string} html format
  */
-function detectUrl(text) {
+function checkMsg(text) {
+    if (isHtml(text)) return stripHtml(text);
     let urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.replace(urlRegex, (url) => {
         if (isImageURL(text)) return '<p><img src="' + url + '" alt="img" width="200" height="auto"/></p>';
         return '<a id="chat-msg-a" href="' + url + '" target="_blank">' + url + '</a>';
     });
+}
+
+/**
+ * Strip Html
+ * @param {string} html code
+ * @returns only text from html
+ */
+function stripHtml(html) {
+    // return html.replace(/<[^>]+>/g, '');
+    let doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+}
+
+/**
+ * Check if string contain html
+ * @param {string} str
+ * @returns
+ */
+function isHtml(str) {
+    var a = document.createElement('div');
+    a.innerHTML = str;
+    for (var c = a.childNodes, i = c.length; i--; ) {
+        if (c[i].nodeType == 1) return true;
+    }
+    return false;
 }
 
 /**
@@ -4199,7 +4229,8 @@ function handlePeerPrivateMsg(peer_id, toPeerName) {
             },
         }).then((result) => {
             if (result.value) {
-                let pMsg = result.value;
+                let pMsg = checkMsg(result.value);
+                if (!pMsg) return;
                 emitMsg(myPeerName, toPeerName, pMsg, true);
                 appendMessage(
                     myPeerName,
