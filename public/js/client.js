@@ -290,6 +290,9 @@ const showFileShareBtn = true;
 const showMySettingsBtn = true;
 const showAboutBtn = true;
 
+// force the webCam to max resolution, up to 4k as default
+const forceCamMaxResolution = true;
+
 /**
  * Load all Html elements by Id
  */
@@ -1254,9 +1257,8 @@ function setupLocalMedia(callback, errorback) {
 
     console.log('Supported constraints', navigator.mediaDevices.getSupportedConstraints());
 
-    // default | qvgaVideo | vgaVideo | hdVideo | fhdVideo | 4kVideo |
-    let videoConstraints =
-        myBrowserName === 'Firefox' ? getVideoConstraints('useVideo') : getVideoConstraints('default');
+    // default | qvgaVideo | vgaVideo | hdVideo | fhdVideo | 2kVideo | 4kVideo |
+    let videoConstraints = getVideoConstraints('default');
 
     const constraints = {
         audio: {
@@ -2614,12 +2616,16 @@ function getVideoConstraints(videoQuality) {
     let frameRate = { max: videoMaxFrameRate };
 
     switch (videoQuality) {
-        case 'useVideo':
-            return useVideo;
-        // Firefox not support set frameRate (OverconstrainedError) O.o
         case 'default':
+            if (forceCamMaxResolution) {
+                // This will make the browser use the maximum resolution available as default, `up to 4K`.
+                return {
+                    width: { ideal: 3840 },
+                    height: { ideal: 2160 },
+                    frameRate: frameRate,
+                }; // video cam constraints default
+            }
             return { frameRate: frameRate };
-        // video cam constraints default
         case 'qvgaVideo':
             return {
                 width: { exact: 320 },
@@ -2644,6 +2650,12 @@ function getVideoConstraints(videoQuality) {
                 height: { exact: 1080 },
                 frameRate: frameRate,
             }; // video cam constraints very high bandwidth
+        case '2kVideo':
+            return {
+                width: { exact: 2560 },
+                height: { exact: 1440 },
+                frameRate: frameRate,
+            }; // video cam constraints ultra high bandwidth
         case '4kVideo':
             return {
                 width: { exact: 3840 },
@@ -3967,7 +3979,8 @@ function hideShowMySettings() {
         playSound('newMessage');
         // adapt it for mobile
         if (isMobileDevice) {
-            mySettings.style.setProperty('width', '90%');
+            mySettings.style.setProperty('width', '100%');
+            mySettings.style.setProperty('height', '100%');
             document.documentElement.style.setProperty('--mySettings-select-w', '99%');
         }
         // my current peer name
