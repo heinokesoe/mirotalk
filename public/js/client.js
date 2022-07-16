@@ -23,7 +23,6 @@
 const isHttps = false; // must be the same on server.js
 const signalingServer = getSignalingServer();
 const roomId = getRoomId();
-const peerInfo = getPeerInfo();
 const peerLoockupUrl = 'https://extreme-ip-lookup.com/json/?key=demo2'; // get your API Key at https://extreme-ip-lookup.com
 const avatarApiUrl = 'https://eu.ui-avatars.com/api';
 const surveyURL = 'https://www.questionpro.com/t/AUs7VZq00L';
@@ -39,6 +38,8 @@ const deleteImg = '../images/delete.png';
 const youtubeImg = '../images/youtube.png';
 const messageImg = '../images/message.png';
 const kickedOutImg = '../images/leave-room.png';
+const audioGif = '../images/audio.gif';
+const videoAudioShare = '../images/va-share.png';
 const aboutImg = '../images/mirotalk-logo.png';
 // nice free icon: https://www.iconfinder.com
 
@@ -70,6 +71,11 @@ const chatInputEmoji = {
 let thisRoomPassword = null;
 
 let myPeerId; // socket.id
+let peerInfo = {}; // Some peer info
+let userAgent; // User agent info
+
+let isTabletDevice = false;
+let isIPadDevice = false;
 
 // video cam - screen max frame rate
 let videoMaxFrameRate = 30;
@@ -91,12 +97,13 @@ let peerGeo;
 let myPeerName = getPeerName();
 let isScreenEnabled = getScreenEnabled();
 let isScreenSharingSupported = false;
+let isCamMirrored = false;
 let notify = getNotify();
 let useAudio = true;
 let useVideo = true;
 let isEnumerateVideoDevices = false;
 let isEnumerateAudioDevices = false;
-let camera = 'user';
+let camera = 'user'; // user = front-facing camera on a smartphone. | environment = the back camera on a smartphone.
 let roomLocked = false;
 let myVideoChange = false;
 let myHandStatus = false;
@@ -269,9 +276,13 @@ let receiveInProgress = false;
 const chunkSize = 1024 * 16; // 16kb/s
 // video URL player
 let videoUrlCont;
+let videoAudioUrlCont;
 let videoUrlHeader;
+let videoAudioUrlHeader;
 let videoUrlCloseBtn;
+let videoAudioCloseBtn;
 let videoUrlIframe;
+let videoAudioUrlElement;
 // speech recognition
 let speechRecognitionStart;
 let speechRecognitionStop;
@@ -292,8 +303,8 @@ const showFileShareBtn = true;
 const showMySettingsBtn = true;
 const showAboutBtn = true;
 
-// force the webCam to max resolution, up to 4k as default
-const forceCamMaxResolution = true;
+// This force the webCam to max resolution, up to 4k and 60fps as default (high bandwidth are required)
+const forceCamMaxResolutionAndFps = false;
 
 /**
  * Load all Html elements by Id
@@ -411,9 +422,13 @@ function getHtmlElementsById() {
     receiveFilePercentage = getId('receiveFilePercentage');
     // video url player
     videoUrlCont = getId('videoUrlCont');
+    videoAudioUrlCont = getId('videoAudioUrlCont');
     videoUrlHeader = getId('videoUrlHeader');
+    videoAudioUrlHeader = getId('videoAudioUrlHeader');
     videoUrlCloseBtn = getId('videoUrlCloseBtn');
+    videoAudioCloseBtn = getId('videoAudioCloseBtn');
     videoUrlIframe = getId('videoUrlIframe');
+    videoAudioUrlElement = getId('videoAudioUrlElement');
     // speech recognition
     speechRecognitionStart = getId('speechRecognitionStart');
     speechRecognitionStop = getId('speechRecognitionStop');
@@ -487,7 +502,8 @@ function setButtonsToolTip() {
     setTippy(receiveHideBtn, 'Hide file transfer', 'right-start');
     // video URL player
     setTippy(videoUrlCloseBtn, 'Close the video player', 'right-start');
-    setTippy(msgerVideoUrlBtn, 'Share YouTube video to all participants', 'top');
+    setTippy(videoAudioCloseBtn, 'Close the video player', 'right-start');
+    setTippy(msgerVideoUrlBtn, 'Share a video or audio to all participants', 'top');
 }
 
 /**
@@ -513,6 +529,8 @@ function getPeerInfo() {
         detectRTCversion: DetectRTC.version,
         isWebRTCSupported: DetectRTC.isWebRTCSupported,
         isMobileDevice: DetectRTC.isMobileDevice,
+        isTabletDevice: isTabletDevice,
+        isIPadDevice: isIPadDevice,
         osName: DetectRTC.osName,
         osVersion: DetectRTC.osVersion,
         browserName: DetectRTC.browser.name,
@@ -644,6 +662,12 @@ function initClientPeer() {
         userLog('error', 'This browser seems not supported WebRTC!');
         return;
     }
+
+    userAgent = navigator.userAgent.toLowerCase();
+
+    isTabletDevice = isTablet(userAgent);
+    isIPadDevice = isIpad(userAgent);
+    peerInfo = getPeerInfo();
 
     console.log('01. Connecting to signaling server');
 
@@ -838,6 +862,7 @@ async function joinToChannel() {
     console.log('12. join to channel', roomId);
     sendToServer('join', {
         channel: roomId,
+        userAgent: userAgent,
         channel_password: thisRoomPassword,
         peer_info: peerInfo,
         peer_geo: peerGeo,
@@ -1674,7 +1699,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     const remoteHandStatusIcon = document.createElement('button');
     const remoteVideoStatusIcon = document.createElement('button');
     const remoteAudioStatusIcon = document.createElement('button');
-    const remoteYoutubeBtnBtn = document.createElement('button');
+    const remoteVideoAudioUrlBtn = document.createElement('button');
     const remoteFileShareBtn = document.createElement('button');
     const remotePrivateMsgBtn = document.createElement('button');
     const remotePeerKickOut = document.createElement('button');
@@ -1718,8 +1743,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     remoteFileShareBtn.className = 'fas fa-upload';
 
     // remote peer YouTube video
-    remoteYoutubeBtnBtn.setAttribute('id', peer_id + '_youtube');
-    remoteYoutubeBtnBtn.className = 'fab fa-youtube';
+    remoteVideoAudioUrlBtn.setAttribute('id', peer_id + '_videoAudioUrl');
+    remoteVideoAudioUrlBtn.className = 'fab fa-youtube';
 
     // my video to image
     remoteVideoToImgBtn.setAttribute('id', peer_id + '_snapshot');
@@ -1739,7 +1764,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
         setTippy(remoteHandStatusIcon, 'Participant hand is raised', 'bottom');
         setTippy(remoteVideoStatusIcon, 'Participant video is on', 'bottom');
         setTippy(remoteAudioStatusIcon, 'Participant audio is on', 'bottom');
-        setTippy(remoteYoutubeBtnBtn, 'Send YouTube video', 'bottom');
+        setTippy(remoteVideoAudioUrlBtn, 'Send Video or Audio', 'bottom');
         setTippy(remotePrivateMsgBtn, 'Send private message', 'bottom');
         setTippy(remoteFileShareBtn, 'Send file', 'bottom');
         setTippy(remoteVideoToImgBtn, 'Take a snapshot', 'bottom');
@@ -1768,7 +1793,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     remoteStatusMenu.appendChild(remoteAudioStatusIcon);
     remoteStatusMenu.appendChild(remotePrivateMsgBtn);
     remoteStatusMenu.appendChild(remoteFileShareBtn);
-    remoteStatusMenu.appendChild(remoteYoutubeBtnBtn);
+    remoteStatusMenu.appendChild(remoteVideoAudioUrlBtn);
     remoteStatusMenu.appendChild(remoteVideoToImgBtn);
     remoteStatusMenu.appendChild(remotePeerKickOut);
     remoteStatusMenu.appendChild(remoteVideoFullScreenBtn);
@@ -1821,8 +1846,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     handlePeerPrivateMsg(peer_id, peer_name);
     // handle remote send file
     handlePeerSendFile(peer_id);
-    // handle remote youtube video
-    handlePeerYouTube(peer_id);
+    // handle remote video - audio URL
+    handlePeerVideoAudioUrl(peer_id);
     // show status menu
     toggleClassElements('statusMenu', 'inline');
     // notify if peer started to recording own screen + audio
@@ -2758,8 +2783,14 @@ function setupVideoUrlPlayer() {
         document.documentElement.style.setProperty('--iframe-height', '240px');
     } else {
         dragElement(videoUrlCont, videoUrlHeader);
+        dragElement(videoAudioUrlCont, videoAudioUrlHeader);
     }
     videoUrlCloseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeVideoUrlPlayer();
+        emitVideoPlayer('close');
+    });
+    videoAudioCloseBtn.addEventListener('click', (e) => {
         e.preventDefault();
         closeVideoUrlPlayer();
         emitVideoPlayer('close');
@@ -2804,6 +2835,7 @@ function getAudioVideoConstraints() {
 
 /**
  * Get video constraints: https://webrtc.github.io/samples/src/content/getusermedia/resolution/
+ * WebCam resolution: https://webcamtests.com/resolution
  * @param {string} videoQuality desired video quality
  * @returns {object} video constraints
  */
@@ -2812,12 +2844,12 @@ function getVideoConstraints(videoQuality) {
 
     switch (videoQuality) {
         case 'default':
-            if (forceCamMaxResolution) {
-                // This will make the browser use the maximum resolution available as default, `up to 4K`.
+            if (forceCamMaxResolutionAndFps) {
+                // This will make the browser use the maximum resolution available as default, `up to 4K and 60fps`.
                 return {
                     width: { ideal: 3840 },
                     height: { ideal: 2160 },
-                    frameRate: frameRate,
+                    frameRate: { ideal: 60 },
                 }; // video cam constraints default
             }
             return { frameRate: frameRate };
@@ -2941,7 +2973,10 @@ async function gotStream(stream) {
     await refreshMyLocalStream(stream, true);
     if (myVideoChange) {
         setMyVideoStatusTrue();
-        if (isMobileDevice) myVideo.classList.toggle('mirror');
+        if (isMobileDevice && !isCamMirrored) {
+            myVideo.classList.toggle('mirror');
+            isCamMirrored = true;
+        }
     }
     // Refresh button list in case labels have become available
     return navigator.mediaDevices.enumerateDevices();
@@ -3258,7 +3293,10 @@ async function swapCamera() {
             await refreshMyStreamToPeers(camStream);
             await refreshMyLocalStream(camStream);
             await setMyVideoStatusTrue();
-            myVideo.classList.toggle('mirror');
+            if (!isCamMirrored) {
+                myVideo.classList.toggle('mirror');
+                isCamMirrored = true;
+            }
         }
     } catch (err) {
         console.log('[Error] to swapping camera', err);
@@ -4503,11 +4541,11 @@ function handlePeerSendFile(peer_id) {
 }
 
 /**
- * Send YouTube video to specific peer
+ * Send video - audio URL to specific peer
  * @param {string} peer_id socket.id
  */
-function handlePeerYouTube(peer_id) {
-    let peerYoutubeBtn = getId(peer_id + '_youtube');
+function handlePeerVideoAudioUrl(peer_id) {
+    let peerYoutubeBtn = getId(peer_id + '_videoAudioUrl');
     peerYoutubeBtn.onclick = () => {
         sendVideoUrl(peer_id);
     };
@@ -5731,9 +5769,9 @@ function sendVideoUrl(peer_id = null) {
     Swal.fire({
         background: swalBackground,
         position: 'center',
-        imageUrl: youtubeImg,
-        title: 'Share YouTube Video',
-        text: 'Paste YouTube video URL',
+        imageUrl: videoAudioShare,
+        title: 'Share a Video or Audio',
+        text: 'Paste a Video or audio URL',
         input: 'text',
         showCancelButton: true,
         confirmButtonText: `Share`,
@@ -5750,9 +5788,20 @@ function sendVideoUrl(peer_id = null) {
                 return;
             }
             console.log('Video URL: ' + result.value);
+            /*
+                https://www.youtube.com/watch?v=RT6_Id5-7-s
+                http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
+                https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3
+            */
+            if (!isVideoTypeSupported(result.value)) {
+                userLog('warning', 'Something wrong, try with another Video or audio URL');
+                return;
+            }
+            let is_youtube = getVideoType(result.value) == 'na' ? true : false;
+            let video_url = is_youtube ? getYoutubeEmbed(result.value) : result.value;
             let config = {
-                video_src: result.value,
                 peer_id: peer_id,
+                video_src: video_url,
             };
             openVideoUrlPlayer(config);
             emitVideoPlayer('open', config);
@@ -5764,22 +5813,68 @@ function sendVideoUrl(peer_id = null) {
  * Open video url Player
  */
 function openVideoUrlPlayer(config) {
+    console.log('Open video Player', config);
     let videoSrc = config.video_src;
+    let videoType = getVideoType(videoSrc);
     let videoEmbed = getYoutubeEmbed(videoSrc);
+    console.log('Video embed', videoEmbed);
     //
     if (!isVideoUrlPlayerOpen) {
         if (videoEmbed) {
             playSound('newMessage');
+            console.log('Load element type: iframe');
             videoUrlIframe.src = videoEmbed;
             videoUrlCont.style.display = 'flex';
             isVideoUrlPlayerOpen = true;
         } else {
-            userLog('error', 'Something wrong, try with another Youtube URL');
+            playSound('newMessage');
+            console.log('Load element type: Video');
+            videoAudioUrlCont.style.display = 'flex';
+            videoAudioUrlElement.setAttribute('src', videoSrc);
+            videoAudioUrlElement.type = videoType;
+            if (videoAudioUrlElement.type == 'video/mp3') {
+                videoAudioUrlElement.poster = audioGif;
+            }
+            isVideoUrlPlayerOpen = true;
         }
     } else {
         // video player seems open
-        videoUrlIframe.src = videoEmbed;
+        if (videoEmbed) {
+            videoUrlIframe.src = videoEmbed;
+        } else {
+            videoAudioUrlElement.src = videoSrc;
+        }
     }
+}
+
+/**
+ * Get video type
+ * @param {string} url
+ * @returns string video type
+ */
+function getVideoType(url) {
+    if (url.endsWith('.mp4')) return 'video/mp4';
+    if (url.endsWith('.mp3')) return 'video/mp3';
+    if (url.endsWith('.webm')) return 'video/webm';
+    if (url.endsWith('.ogg')) return 'video/ogg';
+    return 'na';
+}
+
+/**
+ * Check if video URL is supported
+ * @param {string} url
+ * @returns boolean true/false
+ */
+function isVideoTypeSupported(url) {
+    if (
+        url.endsWith('.mp4') ||
+        url.endsWith('.mp3') ||
+        url.endsWith('.webm') ||
+        url.endsWith('.ogg') ||
+        url.includes('youtube')
+    )
+        return true;
+    return false;
 }
 
 /**
@@ -5797,9 +5892,14 @@ function getYoutubeEmbed(url) {
  * Close Video Url Player
  */
 function closeVideoUrlPlayer() {
-    // Reload all iframes again to stop videos & disable autoplay
-    videoUrlIframe.src = videoUrlIframe.src.replace('?autoplay=1', '');
+    console.log('Close video Player', {
+        videoUrlIframe: videoUrlIframe.src,
+        videoAudioUrlElement: videoAudioUrlElement.src,
+    });
+    if (videoUrlIframe.src != '') videoUrlIframe.setAttribute('src', '');
+    if (videoAudioUrlElement.src != '') videoAudioUrlElement.setAttribute('src', '');
     videoUrlCont.style.display = 'none';
+    videoAudioUrlCont.style.display = 'none';
     isVideoUrlPlayerOpen = false;
 }
 
@@ -5948,7 +6048,7 @@ function showAbout() {
         <div id="about">
             <b><a href="https://github.com/miroslavpejic85/mirotalk" target="_blank">Open Source</a></b> project
             <br/><br/>
-            <button class="pulsate" onclick="window.open('https://github.com/sponsors/miroslavpejic85?o=esb')"><i class="fas fa-heart" ></i>&nbsp;Sponsor</button>
+            <button class="pulsate" onclick="window.open('https://github.com/sponsors/miroslavpejic85?o=esb')"><i class="fas fa-heart" ></i>&nbsp;Support</button>
             <br /><br />
             Author:<a href="https://www.linkedin.com/in/miroslav-pejic-976a07101/" target="_blank"> Miroslav Pejic</a>
         </div>
@@ -6194,6 +6294,26 @@ function toggleClassElements(className, displayState) {
     for (let i = 0; i < elements.length; i++) {
         elements[i].style.display = displayState;
     }
+}
+
+/**
+ * Check if Tablet device
+ * @param {object} userAgent info
+ * @return {boolean} true/false
+ */
+function isTablet(userAgent) {
+    return /(ipad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk|(puffin(?!.*(IP|AP|WP))))/.test(
+        userAgent,
+    );
+}
+
+/**
+ * Check if IPad device
+ * @param {object} userAgent
+ * @return {boolean} true/false
+ */
+function isIpad(userAgent) {
+    return /macintosh/.test(userAgent) && 'ontouchend' in document;
 }
 
 /**
