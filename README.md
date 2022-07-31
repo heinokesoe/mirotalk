@@ -21,7 +21,7 @@
 
 <br/>
 
--   Is `100% Free` - `Open Source` - `Self Hosted`
+-   Is `100% Free` - `Open Source` - `Self Hosted` and [PWA](https://en.wikipedia.org/wiki/Progressive_web_application)!
 -   No download, plug-in, or login required, entirely browser-based
 -   Unlimited number of conference rooms without call time limitation
 -   Translated in 133 languages
@@ -123,7 +123,7 @@ Embedding a meeting into a service or app using an iframe.
 $ git clone https://github.com/miroslavpejic85/mirotalk.git
 # go to mirotalk dir
 $ cd mirotalk
-# copy .env.template to .env
+# copy .env.template to .env (edit it according to your needs)
 $ cp .env.template .env
 # install dependencies
 $ npm install
@@ -144,7 +144,7 @@ $ npm start
 -   Install docker compose: https://docs.docker.com/compose/install/
 
 ```bash
-# copy .env.template to .env
+# copy .env.template to .env (edit it according to your needs)
 $ cp .env.template .env
 # build or rebuild services
 $ docker-compose build
