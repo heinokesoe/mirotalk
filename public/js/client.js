@@ -10,7 +10,7 @@
  * MiroTalk P2P - Client component
  *
  * @link    GitHub: https://github.com/miroslavpejic85/mirotalk
- * @link    Live demo: https://p2p.mirotalk.org or https://mirotalk.up.railway.app or https://mirotalk.herokuapp.com
+ * @link    Live demo: https://p2p.mirotalk.com or https://mirotalk.up.railway.app or https://mirotalk.herokuapp.com
  * @license For open source use: AGPLv3
  * @license For commercial or closed source, contact us at info.mirotalk@gmail.com
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
@@ -67,6 +67,25 @@ const chatInputEmoji = {
     ":'(": '\uD83D\uDE22',
     ':+1:': '\uD83D\uDC4D',
 }; // https://github.com/wooorm/gemoji/blob/main/support.md
+
+// show desired buttons
+const showShareRoomBtn = true;
+const showAudioBtn = true;
+const showVideoBtn = true;
+const showSwapCameraBtn = true;
+const showScreenShareBtn = true;
+const showRecordStreamBtn = true;
+const showFullScreenBtn = true;
+const showChatRoomBtn = true;
+const showCaptionBtn = true;
+const showMyHandBtn = true;
+const showWhiteboardBtn = true;
+const showFileShareBtn = true;
+const showMySettingsBtn = true;
+const showAboutBtn = true;
+
+// This force the webCam to max resolution, up to 4k and 60fps as default (high bandwidth are required)
+const forceCamMaxResolutionAndFps = false;
 
 let thisRoomPassword = null;
 
@@ -288,25 +307,6 @@ let videoAudioUrlElement;
 // speech recognition
 let speechRecognitionStart;
 let speechRecognitionStop;
-
-// show desired buttons
-const showShareRoomBtn = true;
-const showAudioBtn = true;
-const showVideoBtn = true;
-const showSwapCameraBtn = true;
-const showScreenShareBtn = true;
-const showRecordStreamBtn = true;
-const showFullScreenBtn = true;
-const showChatRoomBtn = true;
-const showCaptionBtn = true;
-const showMyHandBtn = true;
-const showWhiteboardBtn = true;
-const showFileShareBtn = true;
-const showMySettingsBtn = true;
-const showAboutBtn = true;
-
-// This force the webCam to max resolution, up to 4k and 60fps as default (high bandwidth are required)
-const forceCamMaxResolutionAndFps = false;
 
 /**
  * Load all Html elements by Id
@@ -530,6 +530,7 @@ function getPeerInfo() {
     return {
         detectRTCversion: DetectRTC.version,
         isWebRTCSupported: DetectRTC.isWebRTCSupported,
+        isDesktopDevice: !DetectRTC.isMobileDevice && !isTabletDevice && !isIPadDevice,
         isMobileDevice: DetectRTC.isMobileDevice,
         isTabletDevice: isTabletDevice,
         isIPadDevice: isIPadDevice,
@@ -3040,7 +3041,8 @@ async function gotStream(stream) {
     await refreshMyLocalStream(stream, true);
     if (myVideoChange) {
         setMyVideoStatusTrue();
-        if (isMobileDevice && !isCamMirrored) {
+        // This fix IPadPro - Tablet mirror of the back camera
+        if ((isMobileDevice || isIPadDevice || isTabletDevice) && !isCamMirrored) {
             myVideo.classList.toggle('mirror');
             isCamMirrored = true;
         }
@@ -4305,7 +4307,7 @@ function downloadChatMsgs() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    playSound('ok');
+    playSound('download');
 }
 
 /**
@@ -4319,7 +4321,7 @@ function downloadCaptions() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    playSound('ok');
+    playSound('download');
 }
 
 /**
@@ -6418,7 +6420,7 @@ function getEcN(className) {
  * @param {object} elem
  */
 function hide(elem) {
-    elem.className = 'hidden';
+    elem.classList.add('hidden');
 }
 
 /**
@@ -6426,5 +6428,5 @@ function hide(elem) {
  * @param {object} elem
  */
 function show(elem) {
-    elem.className = '';
+    elem.classList.remove('hidden');
 }
