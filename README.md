@@ -140,6 +140,8 @@ $ npm start
 
 <br/>
 
+![docker](public/images/docker.png)
+
 -   Install docker engine: https://docs.docker.com/engine/install/
 -   Install docker compose: https://docs.docker.com/compose/install/
 
@@ -150,7 +152,7 @@ $ cp .env.template .env
 $ docker-compose build
 # create and start containers
 $ docker-compose up # -d
-# stop and remove resources
+# to stop and remove resources
 $ docker-compose down
 ```
 
