@@ -51,11 +51,11 @@
 </details>
 
 <details>
-<summary>Presentation</summary>
+<summary>About</summary>
 
-<br/>
+-   [Presentation](https://www.canva.com/design/DAE693uLOIU/view)
 
-<a href="https://www.canva.com/design/DAE693uLOIU/view">MiroTalk presentation </a> - <a href="https://www.youtube.com/watch?v=_IVn2aINYww">video</a>
+-   [Video](https://www.youtube.com/watch?v=_IVn2aINYww)
 
 </details>
 
@@ -252,7 +252,7 @@ If you want to deploy a MiroTalk P2P instance on your dedicated server, or for o
 
 <br/>
 
-Follow [this documentation](docs/self-hosting.md).
+-   [How to Self-Hosting](docs/self-hosting.md)
 
 </details>
 
