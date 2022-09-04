@@ -164,6 +164,8 @@ let isVideoOnFullScreen = false;
 let isDocumentOnFullScreen = false;
 let isWhiteboardFs = false;
 let isVideoUrlPlayerOpen = false;
+let isVideoPinned = false;
+let pinnedVideoPlayerId = null;
 let isRecScreenStream = false;
 let isChatPasteTxt = false;
 let needToCreateOffer = false; // after session description answer
@@ -214,6 +216,8 @@ let msgerChat;
 let msgerEmojiBtn;
 let msgerMarkdownBtn;
 let msgerInput;
+let msgerCleanTextBtn;
+let msgerPasteBtn;
 let msgerSendBtn;
 //caption section
 let captionDraggable;
@@ -373,6 +377,8 @@ function getHtmlElementsById() {
     msgerEmojiBtn = getId('msgerEmojiBtn');
     msgerMarkdownBtn = getId('msgerMarkdownBtn');
     msgerInput = getId('msgerInput');
+    msgerCleanTextBtn = getId('msgerCleanTextBtn');
+    msgerPasteBtn = getId('msgerPasteBtn');
     msgerSendBtn = getId('msgerSendBtn');
     // chat room connected peers
     msgerCP = getId('msgerCP');
@@ -497,6 +503,8 @@ function setButtonsToolTip() {
     setTippy(msgerClose, 'Close', 'top');
     setTippy(msgerEmojiBtn, 'Emoji', 'top');
     setTippy(msgerMarkdownBtn, 'Markdown', 'top');
+    setTippy(msgerCleanTextBtn, 'Clean', 'top');
+    setTippy(msgerPasteBtn, 'Paste', 'top');
     setTippy(msgerSendBtn, 'Send', 'top');
     // caption buttons
     setTippy(captionTheme, 'Ghost theme', 'top');
@@ -547,6 +555,7 @@ function setButtonsToolTip() {
  * @param {string} placement position
  */
 function setTippy(elem, content, placement) {
+    if (isMobileDevice) return;
     tippy(elem, {
         content: content,
         placement: placement,
@@ -1330,6 +1339,7 @@ function handleDisconnect(reason) {
     for (let peer_id in peerConnections) {
         peerConnections[peer_id].close();
         msgerRemovePeer(peer_id);
+        removeVideoPinMediaContainer(peer_id);
     }
     chatDataChannels = {};
     fileDataChannels = {};
@@ -1356,6 +1366,7 @@ function handleRemovePeer(config) {
     if (peer_id in peerConnections) peerConnections[peer_id].close();
 
     msgerRemovePeer(peer_id);
+    removeVideoPinMediaContainer(peer_id);
 
     delete chatDataChannels[peer_id];
     delete fileDataChannels[peer_id];
@@ -1659,6 +1670,7 @@ async function loadLocalMedia(stream) {
     const myVideoStatusIcon = document.createElement('button');
     const myAudioStatusIcon = document.createElement('button');
     const myVideoFullScreenBtn = document.createElement('button');
+    const myVideoPinBtn = document.createElement('button');
     const myVideoAvatarImage = document.createElement('img');
     const myPitchMeter = document.createElement('div');
     const myPitchBar = document.createElement('div');
@@ -1699,6 +1711,10 @@ async function loadLocalMedia(stream) {
     myVideoFullScreenBtn.setAttribute('id', 'myVideoFullScreenBtn');
     myVideoFullScreenBtn.className = 'fas fa-expand';
 
+    // my video pin/unpin button
+    myVideoPinBtn.setAttribute('id', 'myVideoPinBtn');
+    myVideoPinBtn.className = 'fas fa-map-pin';
+
     // no mobile devices
     if (!isMobileDevice) {
         setTippy(myCountTime, 'Session Time', 'bottom');
@@ -1708,6 +1724,7 @@ async function loadLocalMedia(stream) {
         setTippy(myAudioStatusIcon, 'My audio is on', 'bottom');
         setTippy(myVideoToImgBtn, 'Take a snapshot', 'bottom');
         setTippy(myVideoFullScreenBtn, 'Full screen mode', 'bottom');
+        setTippy(myVideoPinBtn, 'Toggle Pin video', 'bottom');
     }
 
     // my video avatar image
@@ -1731,6 +1748,7 @@ async function loadLocalMedia(stream) {
     myStatusMenu.appendChild(myAudioStatusIcon);
     myStatusMenu.appendChild(myVideoToImgBtn);
     myStatusMenu.appendChild(myVideoFullScreenBtn);
+    if (!isMobileDevice) myStatusMenu.appendChild(myVideoPinBtn);
 
     // add my pitchBar
     myPitchMeter.appendChild(myPitchBar);
@@ -1773,6 +1791,7 @@ async function loadLocalMedia(stream) {
     handleVideoPlayerFs('myVideo', 'myVideoFullScreenBtn');
     handleFileDragAndDrop('myVideo', myPeerId, true);
     handleVideoToImg('myVideo', 'myVideoToImgBtn');
+    handleVideoPinUnpin('myVideo', 'myVideoPinBtn', 'myVideoWrap');
     refreshMyVideoAudioStatus(localMediaStream);
 
     if (!useVideo) {
@@ -1848,6 +1867,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     const remotePeerKickOut = document.createElement('button');
     const remoteVideoToImgBtn = document.createElement('button');
     const remoteVideoFullScreenBtn = document.createElement('button');
+    const remoteVideoPinBtn = document.createElement('button');
     const remoteVideoAvatarImage = document.createElement('img');
     const remotePitchMeter = document.createElement('div');
     const remotePitchBar = document.createElement('div');
@@ -1901,6 +1921,10 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     remoteVideoFullScreenBtn.setAttribute('id', peer_id + '_fullScreen');
     remoteVideoFullScreenBtn.className = 'fas fa-expand';
 
+    // remote video pin/unpin button
+    remoteVideoPinBtn.setAttribute('id', peer_id + '_pinUnpin');
+    remoteVideoPinBtn.className = 'fas fa-map-pin';
+
     // no mobile devices
     if (!isMobileDevice) {
         setTippy(remoteVideoParagraph, 'Participant name', 'bottom');
@@ -1913,6 +1937,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
         setTippy(remoteVideoToImgBtn, 'Take a snapshot', 'bottom');
         setTippy(remotePeerKickOut, 'Kick out', 'bottom');
         setTippy(remoteVideoFullScreenBtn, 'Full screen mode', 'bottom');
+        setTippy(remoteVideoPinBtn, 'Toggle Pin video', 'bottom');
     }
 
     // my video avatar image
@@ -1940,6 +1965,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     remoteStatusMenu.appendChild(remoteVideoToImgBtn);
     if (buttons.remote.showKickOutBtn) remoteStatusMenu.appendChild(remotePeerKickOut);
     remoteStatusMenu.appendChild(remoteVideoFullScreenBtn);
+    if (!isMobileDevice) remoteStatusMenu.appendChild(remoteVideoPinBtn);
 
     remoteMedia.setAttribute('id', peer_id + '_video');
     remoteMedia.setAttribute('playsinline', true);
@@ -1967,6 +1993,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     adaptAspectRatio();
     // handle video to image
     handleVideoToImg(peer_id + '_video', peer_id + '_snapshot', peer_id);
+    // handle video pin/unpin
+    handleVideoPinUnpin(peer_id + '_video', peer_id + '_pinUnpin', peer_id + '_videoWrap');
     // handle video full screen mode
     handleVideoPlayerFs(peer_id + '_video', peer_id + '_fullScreen', peer_id);
     // handle file share drag and drop
@@ -2282,6 +2310,70 @@ function handleFileDragAndDrop(elemId, peer_id, itsMe = false) {
 }
 
 /**
+ * Handle video pin/unpin
+ * @param {string} elemId video id
+ * @param {string} pnId button pin id
+ * @param {string} camId video wrap id
+ */
+function handleVideoPinUnpin(elemId, pnId, camId) {
+    let videoPlayer = getId(elemId);
+    let btnPn = getId(pnId);
+    let cam = getId(camId);
+    let videoMediaContainer = getId('videoMediaContainer');
+    let videoPinMediaContainer = getId('videoPinMediaContainer');
+    if (btnPn && videoPlayer && cam) {
+        btnPn.addEventListener('click', () => {
+            isVideoPinned = !isVideoPinned;
+            if (isVideoPinned) {
+                cam.className = '';
+                cam.style.width = '100%';
+                cam.style.height = '100%';
+                videoMediaContainer.style.width = '25%';
+                videoMediaContainer.style.left = null;
+                videoMediaContainer.style.right = 0;
+                videoPinMediaContainer.appendChild(cam);
+                videoPinMediaContainer.style.display = 'block';
+                pinnedVideoPlayerId = elemId;
+                setColor(btnPn, 'lime');
+            } else {
+                if (pinnedVideoPlayerId != videoPlayer.id) {
+                    isVideoPinned = true;
+                    return userLog('info', 'Another video seems pinned, unpin it before to pin this one');
+                }
+                videoPinMediaContainer.removeChild(cam);
+                cam.className = 'Camera';
+                videoMediaContainer.style.width = '100%';
+                videoMediaContainer.style.right = null;
+                videoMediaContainer.style.left = 0;
+                videoMediaContainer.appendChild(cam);
+                videoPinMediaContainer.style.display = 'none';
+                pinnedVideoPlayerId = null;
+                setColor(btnPn, 'white');
+            }
+            adaptAspectRatio();
+        });
+    }
+}
+
+/**
+ * Remove video pin media container
+ * @param {string} peer_id aka socket.id
+ */
+function removeVideoPinMediaContainer(peer_id) {
+    //alert(pinnedVideoPlayerId + '==' + peer_id);
+    if (isVideoPinned && (pinnedVideoPlayerId == peer_id + '_video' || pinnedVideoPlayerId == peer_id)) {
+        let videoPinMediaContainer = getId('videoPinMediaContainer');
+        let videoMediaContainer = getId('videoMediaContainer');
+        videoPinMediaContainer.style.display = 'none';
+        videoMediaContainer.style.width = '100%';
+        videoMediaContainer.style.right = null;
+        videoMediaContainer.style.left = 0;
+        pinnedVideoPlayerId = null;
+        isVideoPinned = false;
+    }
+}
+
+/**
  * Handle Video to Img click event
  * @param {string} videoStream uuid video element
  * @param {string} videoToImgBtn uuid snapshot btn
@@ -2590,6 +2682,16 @@ function setChatRoomBtn() {
     msgerInput.onpaste = () => {
         isChatPasteTxt = true;
     };
+
+    // clean input msg txt
+    msgerCleanTextBtn.addEventListener('click', (e) => {
+        cleanMessageInput();
+    });
+
+    // paste to input msg txt
+    msgerPasteBtn.addEventListener('click', (e) => {
+        pasteToMessageInput();
+    });
 
     // chat send msg
     msgerSendBtn.addEventListener('click', (e) => {
@@ -3951,6 +4053,7 @@ function showCaptionDraggable() {
         setTippy(captionBtn, 'Close the caption', 'right-start');
     }
 }
+
 /**
  * Clean chat messages
  */
@@ -4101,6 +4204,28 @@ function handleDataChannelChat(dataMessage) {
 }
 
 /**
+ * Clean input txt message
+ */
+function cleanMessageInput() {
+    msgerInput.value = '';
+}
+
+/**
+ * Paste from clipboard to input txt message
+ */
+function pasteToMessageInput() {
+    navigator.clipboard
+        .readText()
+        .then((text) => {
+            msgerInput.value = text;
+            isChatPasteTxt = true;
+        })
+        .catch((err) => {
+            console.error('Failed to read clipboard contents: ', err);
+        });
+}
+
+/**
  * Handle text transcript getting from peers
  * @param {object} config data
  */
@@ -4173,24 +4298,11 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
         privateMsg: privateMsg,
     });
 
-    // add btn direct reply to private message
-    if (privateMsg && msgId != null && msgId != myPeerId) {
-        let randId = makeId(10);
-        msg =
-            msg +
-            `<hr/>
-            <button 
-                class="cButtons" 
-                id="${randId}" 
-                onclick="sendPrivateMsgToPeer('${myPeerId}','${from}')"
-            ><i class="fas fa-paper-plane"></i> Reply (private)</button>`;
-    }
-
     // check if i receive a private message
     let msgBubble = privateMsg ? 'private-msg-bubble' : 'msg-bubble';
 
-    const msgHTML = `
-	<div class="msg ${side}-msg">
+    let msgHTML = `
+	<div id="msg-${chatMessagesId}" class="msg ${side}-msg">
 		<div class="msg-img" style="background-image: url('${img}')"></div>
 		<div class=${msgBubble}>
             <div class="msg-info">
@@ -4200,16 +4312,68 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
             <div id="${chatMessagesId}" class="msg-text">${msg}
                 <hr/>
                 <button
-                    class="msger-copy-txt" 
+                    id="msg-delete-${chatMessagesId}"
+                    class="fas fa-trash"
+                    style="color:#fff; border:none; background:transparent;"
+                    onclick="deleteMessage('msg-${chatMessagesId}')"
+                ></button>
+                <button
+                    id="msg-copy-${chatMessagesId}"
+                    class="fas fa-copy" 
+                    style="color:#fff; border:none; background:transparent;"
                     onclick="copyToClipboard('${chatMessagesId}')"
-                ><i class="fas fa-copy"></i></button>
+                ></button>
+    `;
+    // add btn direct reply to private message
+    if (privateMsg && msgId != null && msgId != myPeerId) {
+        msgHTML += `
+            <button 
+                class="fas fa-paper-plane"
+                id="msg-private-reply-${chatMessagesId}"
+                style="color:#fff; border:none; background:transparent;"
+                onclick="sendPrivateMsgToPeer('${myPeerId}','${from}')"
+            ></button>`;
+    }
+    msgHTML += `
             </div>
         </div>
 	</div>
     `;
     msgerChat.insertAdjacentHTML('beforeend', msgHTML);
     msgerChat.scrollTop += 500;
+    setTippy(getId('msg-delete-' + chatMessagesId), 'Delete', 'top');
+    setTippy(getId('msg-copy-' + chatMessagesId), 'Copy', 'top');
+    setTippy(getId('msg-private-reply-' + chatMessagesId), 'Reply', 'top');
     chatMessagesId++;
+}
+
+/**
+ * Delete message
+ * @param {string} id msg id
+ */
+function deleteMessage(id) {
+    playSound('newMessage');
+    Swal.fire({
+        background: swalBackground,
+        position: 'center',
+        title: 'Delete this messages?',
+        imageUrl: deleteImg,
+        showDenyButton: true,
+        confirmButtonText: `Yes`,
+        denyButtonText: `No`,
+        showClass: {
+            popup: 'animate__animated animate__fadeInDown',
+        },
+        hideClass: {
+            popup: 'animate__animated animate__fadeOutUp',
+        },
+    }).then((result) => {
+        // clean this message
+        if (result.isConfirmed) {
+            getId(id).remove();
+            playSound('delete');
+        }
+    });
 }
 
 /**
@@ -4217,7 +4381,7 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
  * @param {string} id
  */
 function copyToClipboard(id) {
-    const text = document.getElementById(id).innerText;
+    const text = getId(id).innerText;
     navigator.clipboard
         .writeText(text)
         .then(() => {
