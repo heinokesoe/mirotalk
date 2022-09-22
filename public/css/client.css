@@ -430,9 +430,14 @@ body {
 
 .msg-text {
     /* https://css-tricks.com/almanac/properties/o/overflow-wrap/ */
+    display: inline;
     overflow-wrap: break-word;
     word-wrap: break-word;
     hyphens: auto;
+}
+
+.msg-text iframe {
+    width: 100%;
 }
 
 .msger-copy-txt {
@@ -440,6 +445,14 @@ body {
     border-radius: 5px;
     color: #fff;
     background: transparent;
+}
+
+.msg-a {
+    color: #fff;
+}
+.msg-a:hover {
+    color: var(--hover-color);
+    transition: all 0.3s ease-in-out;
 }
 
 #chat-msg-a {
@@ -651,7 +664,7 @@ emoji-picker {
 
 #mySettings select {
     font-size: 0.9rem;
-    width: var(--mySettings-select-w);
+    max-width: 305px;
     height: 30px;
     color: #fff;
     background-color: #2b2b2b;

@@ -2375,7 +2375,6 @@ function toggleVideoPin(position) {
             videoMediaContainer.style.width = '25%';
             videoMediaContainer.style.height = '100%';
             videoMediaContainer.style.right = 0;
-            document.documentElement.style.setProperty('--vmi-wh', '15vw');
             break;
         case 'horizontal':
             videoPinMediaContainer.style.width = '100%';
@@ -2385,7 +2384,6 @@ function toggleVideoPin(position) {
             videoMediaContainer.style.width = null;
             videoMediaContainer.style.width = '100% !important';
             videoMediaContainer.style.height = '25%';
-            document.documentElement.style.setProperty('--vmi-wh', '15vh');
             break;
     }
     resizeVideoMedia();
@@ -4575,7 +4573,8 @@ function checkMsg(text) {
     if (isHtml(text)) return stripHtml(text);
     if (isValidHttpURL(text)) {
         if (isImageURL(text)) return '<img src="' + text + '" alt="img" width="180" height="auto"/>';
-        return '<a href="' + text + '" target="_blank">' + text + '</a>';
+        if (isVideoTypeSupported(text)) return getIframe(text);
+        return '<a href="' + text + '" target="_blank" class="msg-a">' + text + '</a>';
     }
     if (isChatMarkdownOn) return marked.parse(text);
     let pre = '<pre>' + text + '</pre>';
@@ -4636,6 +4635,25 @@ function isValidHttpURL(str) {
  */
 function isImageURL(url) {
     return url.match(/\.(jpeg|jpg|gif|png|tiff|bmp)$/) != null;
+}
+
+/**
+ * Get IFrame from URL
+ * @param {string} url
+ * @returns html iframe
+ */
+function getIframe(url) {
+    let is_youtube = getVideoType(url) == 'na' ? true : false;
+    let video_audio_url = is_youtube ? getYoutubeEmbed(url) : url;
+    return `
+    <iframe
+        title="Chat-IFrame"
+        src="${video_audio_url}"
+        width="auto"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+    ></iframe>`;
 }
 
 /**
@@ -6400,7 +6418,7 @@ function isVideoTypeSupported(url) {
         url.endsWith('.mp3') ||
         url.endsWith('.webm') ||
         url.endsWith('.ogg') ||
-        url.includes('youtube')
+        url.includes('youtube.com')
     )
         return true;
     return false;
