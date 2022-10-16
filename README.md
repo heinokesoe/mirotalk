@@ -208,9 +208,11 @@ The API documentation uses [swagger](https://swagger.io/) at http://localhost:30
 
 <br/>
 
-[![Hetzner](public/sponsors/Hetzner.png)](https://www.hetzner.com)
+[![Hetzner](public/sponsors/Hetzner.png)](https://hetzner.cloud/?ref=XdRifCzCK3bn)
 
 This application is running for `demonstration purposes` on [Hetzner](https://www.hetzner.com/), one of `the best` [cloud providers](https://www.hetzner.com/cloud) and [dedicated root servers](https://www.hetzner.com/dedicated-rootserver).
+
+Use [this link](https://hetzner.cloud/?ref=XdRifCzCK3bn) to receive `€⁠20 IN CLOUD CREDITS` on Hetzner.
 
 If you need help to deploy `MiroTalk P2P` instance on `your dedicated cloud server`, or for other needs, don't hesitate to contact us at p2p.mirotalk@gmail.com
 
@@ -310,7 +312,7 @@ Support the project by [becoming a backer or sponsor](https://github.com/sponsor
 
 [![BroadcastX](public/sponsors/BroadcastX.png)](https://broadcastx.de/)
 
-[![Hetzner](public/sponsors/Hetzner.png)](https://www.hetzner.com)
+[![Hetzner](public/sponsors/Hetzner.png)](https://hetzner.cloud/?ref=XdRifCzCK3bn)
 
 </details>
 
