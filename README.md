@@ -36,7 +36,7 @@
 -   Ability to set video quality up to 4K and 60 FPS
 -   Recording your Screen, Audio and Video
 -   Snapshot the video frame and save it as image png
--   Chat with Emoji Picker & Private messages & Save the conversations
+-   Chat with Emoji Picker to show you feeling, private messages, Markdown support, possibility to Save the conversations, and many more
 -   Speech recognition to send the speeches
 -   Advance collaborative whiteboard for the teachers
 -   Share any YT Embed video, video mp4, webm, ogg and audio mp3 in real-time
@@ -165,7 +165,7 @@ $ docker-compose down
 
 <br/>
 
-You can start videoconferencing directly from your Local PC, and be reachable from any device outside your network, simply by following [these documentation](docs/ngrok.md), or expose it directly on [HTTPS](app/ssl/README.md)
+You can start videoconferencing directly from your Local PC, and be reachable from any device outside your network, simply by reading [these documentation](docs/ngrok.md), or expose it directly on [HTTPS](app/ssl/README.md)
 
 </details>
 
@@ -254,7 +254,7 @@ If you want to deploy a MiroTalk P2P instance on your dedicated server, or for o
 
 <br/>
 
--   [How to Self-Hosting](docs/self-hosting.md)
+To `Self-Host MiroTalk P2P` on `Your` dedicated `Server`, read [this documentation](docs/self-hosting.md).
 
 </details>
 
