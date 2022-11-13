@@ -12,7 +12,8 @@
  * @link    GitHub: https://github.com/miroslavpejic85/mirotalk
  * @link    Live demo: https://p2p.mirotalk.com or https://mirotalk.up.railway.app or https://mirotalk.herokuapp.com
  * @license For open source use: AGPLv3
- * @license For commercial or closed source, contact us at info.mirotalk@gmail.com
+ * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or buy directly via CodeCanyon
+ * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
  * @version 1.0.1
  *
@@ -43,6 +44,8 @@ const videoAudioShare = '../images/va-share.png';
 const aboutImg = '../images/mirotalk-logo.png';
 const imgFeedback = '../images/feedback.png';
 const forbiddenImg = '../images/forbidden.png';
+const avatarImg = '../images/mirotalk-logo.png';
+
 // nice free icon: https://www.iconfinder.com
 
 const fileSharingInput = '*'; // allow all file extensions
@@ -122,6 +125,8 @@ const forceCamMaxResolutionAndFps = false; // This force the webCam to max resol
 const userLimitsActive = false; // Limit users per room
 
 const usersCountLimit = 2; // Limit 2 users per room if userLimitsActive true
+
+const useAvatarApi = true; // if false the cam-Off avatar = avatarImg
 
 let notifyBySound = true; // turn on - off sound notifications
 
@@ -2241,12 +2246,16 @@ function adaptAspectRatio() {
  */
 function setPeerAvatarImgName(videoAvatarImageId, peerName) {
     let videoAvatarImageElement = getId(videoAvatarImageId);
-    // default img size 64 max 512
-    let avatarImgSize = isMobileDevice ? 128 : 256;
-    videoAvatarImageElement.setAttribute(
-        'src',
-        avatarApiUrl + '?name=' + peerName + '&size=' + avatarImgSize + '&background=random&rounded=true',
-    );
+    if (useAvatarApi) {
+        // default img size 64 max 512
+        let avatarImgSize = isMobileDevice ? 128 : 256;
+        videoAvatarImageElement.setAttribute(
+            'src',
+            avatarApiUrl + '?name=' + peerName + '&size=' + avatarImgSize + '&background=random&rounded=true',
+        );
+    } else {
+        videoAvatarImageElement.setAttribute('src', avatarImg);
+    }
 }
 
 /**
