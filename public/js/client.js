@@ -114,6 +114,7 @@ const buttons = {
     },
     local: {
         showSnapShotBtn: true,
+        showVideoCircleBtn: true,
     },
 };
 
@@ -1862,8 +1863,10 @@ async function loadLocalMedia(stream) {
     if (buttons.local.showSnapShotBtn) {
         myVideoNavBar.appendChild(myVideoToImgBtn);
     }
+    if (buttons.local.showVideoCircleBtn) {
+        myVideoNavBar.appendChild(myPrivacyBtn);
+    }
 
-    myVideoNavBar.appendChild(myPrivacyBtn);
     myVideoNavBar.appendChild(myAudioStatusIcon);
     myVideoNavBar.appendChild(myVideoStatusIcon);
     myVideoNavBar.appendChild(myHandStatusIcon);
@@ -1917,8 +1920,9 @@ async function loadLocalMedia(stream) {
     if (buttons.local.showSnapShotBtn) {
         handleVideoToImg('myVideo', 'myVideoToImgBtn');
     }
-
-    handleVideoPrivacyBtn('myVideo', 'myPrivacyBtn');
+    if (buttons.local.showVideoCircleBtn) {
+        handleVideoPrivacyBtn('myVideo', 'myPrivacyBtn');
+    }
 
     handleVideoPinUnpin('myVideo', 'myVideoPinBtn', 'myVideoWrap', 'myVideo');
 
@@ -2364,11 +2368,17 @@ function handleVideoPlayerFs(videoId, videoFullScreenBtnId, peer_id = null) {
 
     // on button click go on FS mobile/desktop
     videoFullScreenBtn.addEventListener('click', (e) => {
+        if (videoPlayer.classList.contains('videoCircle')) {
+            return userLog('toast', 'Full Screen not allowed if video on privacy mode');
+        }
         gotoFS();
     });
 
     // on video click go on FS
     videoPlayer.addEventListener('click', (e) => {
+        if (videoPlayer.classList.contains('videoCircle')) {
+            return userLog('toast', 'Full Screen not allowed if video on privacy mode');
+        }
         // not mobile on click go on FS or exit from FS
         if (!isMobileDevice) {
             gotoFS();
@@ -2508,9 +2518,11 @@ function setVideoPrivacyStatus(peerVideoId, peerPrivacyActive) {
     if (peerPrivacyActive) {
         video.classList.remove('videoDefault');
         video.classList.add('videoCircle');
+        video.style.objectFit = 'cover';
     } else {
         video.classList.remove('videoCircle');
         video.classList.add('videoDefault');
+        video.style.objectFit = 'var(--video-object-fit)';
     }
 }
 
@@ -2532,7 +2544,9 @@ function handleVideoPinUnpin(elemId, pnId, camId, peerId) {
             playSound('click');
             isVideoPinned = !isVideoPinned;
             if (isVideoPinned) {
-                videoPlayer.style.objectFit = 'contain';
+                if (!videoPlayer.classList.contains('videoCircle')) {
+                    videoPlayer.style.objectFit = 'contain';
+                }
                 cam.className = '';
                 cam.style.width = '100%';
                 cam.style.height = '100%';
@@ -2631,6 +2645,9 @@ function handleVideoToImg(videoStream, videoToImgBtn, peer_id = null) {
     let videoBtn = getId(videoToImgBtn);
     let video = getId(videoStream);
     videoBtn.addEventListener('click', () => {
+        if (video.classList.contains('videoCircle')) {
+            return userLog('toast', 'Snapshot not allowed if video on privacy mode');
+        }
         if (peer_id !== null) {
             // handle remote video snapshot
             let remoteVideoStatusBtn = getId(peer_id + '_videoStatus');
@@ -3912,7 +3929,7 @@ async function toggleScreenSharing() {
             setScreenSharingStatus(isScreenStreaming);
             if (myVideoAvatarImage && !useVideo)
                 myVideoAvatarImage.style.display = isScreenStreaming ? 'none' : 'block';
-            myPrivacyBtn.style.display = isScreenStreaming ? 'none' : 'inline';
+            if (myPrivacyBtn) myPrivacyBtn.style.display = isScreenStreaming ? 'none' : 'inline';
         }
     } catch (err) {
         console.error('[Error] Unable to share the screen', err);
@@ -4065,6 +4082,12 @@ async function refreshMyLocalStream(stream, localAudioTrackChange = false) {
 
     localMediaStream = newStream;
 
+    // refresh video privacy mode on screen sharing
+    if (isScreenStreaming) {
+        isVideoPrivacyActive = false;
+        setVideoPrivacyStatus('myVideo', isVideoPrivacyActive);
+    }
+
     // adapt video object fit on screen streaming
     getId('myVideo').style.objectFit = isScreenStreaming ? 'contain' : 'var(--video-object-fit)';
 
@@ -4076,9 +4099,6 @@ async function refreshMyLocalStream(stream, localAudioTrackChange = false) {
 
     // attachMediaStream is a part of the adapter.js library
     attachMediaStream(myVideo, localMediaStream); // newstream
-
-    // refresh video privacy mode
-    setVideoPrivacyStatus('myVideo', isVideoPrivacyActive);
 
     // on toggleScreenSharing video stop
     if (useVideo || isScreenStreaming) {
@@ -7056,6 +7076,9 @@ function userLog(type, message) {
                 icon: type,
                 title: type,
                 text: message,
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOutUp',
+                },
             });
             playSound('alert');
             break;
