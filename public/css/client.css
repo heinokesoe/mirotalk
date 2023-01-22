@@ -91,6 +91,7 @@ body {
     margin: auto;
     overflow: hidden;
     background: url('../images/bg.svg');
+    /* background: var(--body-bg); */
 }
 
 /*--------------------------------------------------------------
@@ -122,6 +123,45 @@ body {
 #loadingDiv pre {
     padding: 5px;
     font-family: 'Comfortaa';
+}
+
+/*--------------------------------------------------------------
+# Init User
+--------------------------------------------------------------*/
+
+.init-user {
+    display: block;
+    padding: 5px;
+}
+
+.init-user select {
+    display: block;
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px;
+    background: #2c2c2c;
+    color: white;
+    border: var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.init-user button {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    width: 50px;
+    padding: 10px;
+    background: transparent;
+    font-size: 1.5rem;
+    border: var(--border);
+    border-radius: 5px;
+    color: white;
+}
+
+.init-user button:hover {
+    background-color: rgb(35, 35, 35);
+    color: white;
+    transform: scale(1);
 }
 
 /*--------------------------------------------------------------
@@ -172,18 +212,6 @@ body {
 
 #buttonsBar button:focus {
     outline: none;
-}
-
-#initAudioBtn,
-#initVideoBtn {
-    border: none;
-    border-radius: 5px;
-    width: 40px;
-    background: white;
-    color: black;
-    font-size: 1.5rem;
-    padding: 4px;
-    transition: all 0.3s ease-in-out;
 }
 
 #buttonsBar #leaveRoomBtn {
@@ -849,6 +877,10 @@ input:checked + .slider:before {
     text-align: center;
     color: white !important;
     background-color: transparent !important;
+}
+
+.swal2-input {
+    border: var(--border) !important;
 }
 
 .swal2-file {
