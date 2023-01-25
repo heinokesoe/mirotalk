@@ -113,12 +113,17 @@ body {
 #loadingDiv {
     color: #fff;
     padding: 30px;
+    text-align: center;
     border-radius: 10px;
     background: rgba(0, 0, 0, 0.7);
 }
 #loadingDiv h1 {
     font-size: 60px;
     font-family: 'Comfortaa';
+}
+#loadingDiv img {
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 #loadingDiv pre {
     padding: 5px;
@@ -1204,6 +1209,11 @@ progress {
 /*--------------------------------------------------------------
 # Common
 --------------------------------------------------------------*/
+
+select {
+    height: 40px;
+    line-height: 40px;
+}
 
 hr {
     border: 0;
