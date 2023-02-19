@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.0.1
+ * @version 1.0.2
  *
  */
 
@@ -4662,10 +4662,13 @@ function sendChatMessage() {
 
 /**
  * handle Incoming Data Channel Chat Messages
- * @param {object} dataMessage chat messages
+ * @param {object} data chat messages
  */
-function handleDataChannelChat(dataMessage) {
-    if (!dataMessage) return;
+function handleDataChannelChat(data) {
+    if (!data) return;
+
+    // prevent XSS injection from remote peer through Data Channel
+    const dataMessage = JSON.parse(filterXSS(JSON.stringify(data)));
 
     let msgFrom = dataMessage.from;
     let msgTo = dataMessage.to;
@@ -5235,11 +5238,14 @@ function openTab(evt, tabName) {
  * Update myPeerName to other peers in the room
  */
 function updateMyPeerName() {
-    let myNewPeerName = myPeerNameSet.value;
-    let myOldPeerName = myPeerName;
+    const myNewPeerName = myPeerNameSet.value;
+    const myOldPeerName = myPeerName;
 
     // myNewPeerName empty
     if (!myNewPeerName) return;
+
+    // prevent XSS injection to remote peer
+    if (isHtml(myNewPeerName)) return userLog('warning', 'Invalid name!');
 
     myPeerName = myNewPeerName;
     myVideoParagraph.innerHTML = myPeerName + ' (me)';
@@ -6686,7 +6692,11 @@ function sendFileInformations(file, peer_id, broadcast = false) {
         if (!thereIsPeerConnections()) {
             return userLog('info', 'No participants detected');
         }
-        let fileInfo = {
+
+        // prevent XSS injection to remote peer
+        if (isHtml(fileToSend.name)) return userLog('warning', 'Invalid file name!');
+
+        const fileInfo = {
             room_id: roomId,
             broadcast: broadcast,
             peer_name: myPeerName,
