@@ -8,6 +8,8 @@ http://patorjk.com/software/taag/#p=display&f=ANSI%20Regular&t=Server
 ███████ ███████ ██   ██   ████   ███████ ██   ██                                           
 
 dependencies: {
+    @sentry/node            : https://www.npmjs.com/package/@sentry/node
+    @sentry/integrations    : https://www.npmjs.com/package/@sentry/integrations
     body-parser             : https://www.npmjs.com/package/body-parser
     compression             : https://www.npmjs.com/package/compression
     colors                  : https://www.npmjs.com/package/colors
@@ -17,8 +19,6 @@ dependencies: {
     express                 : https://www.npmjs.com/package/express
     ngrok                   : https://www.npmjs.com/package/ngrok
     qs                      : https://www.npmjs.com/package/qs
-    @sentry/node            : https://www.npmjs.com/package/@sentry/node
-    @sentry/integrations    : https://www.npmjs.com/package/@sentry/integrations
     socket.io               : https://www.npmjs.com/package/socket.io
     swagger                 : https://www.npmjs.com/package/swagger-ui-express
     uuid                    : https://www.npmjs.com/package/uuid
@@ -254,9 +254,15 @@ app.get('/join/', (req, res) => {
     res.redirect('/');
 });
 
-// Join Room *
-app.get('/join/*', (req, res) => {
+// Join Room by id
+app.get('/join/:roomId', function (req, res) {
+    // log.debug('Join to room', { roomId: req.params.roomId });
     res.sendFile(views.client);
+});
+
+// Not specified correctly the room id
+app.get('/join/*', function (req, res) {
+    res.redirect('/');
 });
 
 /**
