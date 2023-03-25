@@ -1104,18 +1104,18 @@ async function whoAreYou() {
 
     // select video - audio
 
-    initVideoSelect.onchange = () => {
+    initVideoSelect.onchange = async () => {
         videoSelect.selectedIndex = initVideoSelect.selectedIndex;
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
         myVideoChange = true;
-        refreshLocalMedia();
-        changeCamera(initVideoSelect.value);
+        await refreshLocalMedia();
+        await changeInitCamera(initVideoSelect.value);
     };
-    initMicrophoneSelect.onchange = () => {
+    initMicrophoneSelect.onchange = async () => {
         audioInputSelect.selectedIndex = initMicrophoneSelect.selectedIndex;
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
         myVideoChange = false;
-        refreshLocalMedia();
+        await refreshLocalMedia();
     };
     initSpeakerSelect.onchange = () => {
         audioOutputSelect.selectedIndex = initSpeakerSelect.selectedIndex;
@@ -1189,8 +1189,8 @@ async function loadLocalStorage() {
     // Start init cam
     if (useVideo && initVideoSelect.value) {
         myVideoChange = true;
-        refreshLocalMedia();
-        changeCamera(initVideoSelect.value);
+        await refreshLocalMedia();
+        await changeInitCamera(initVideoSelect.value);
     }
 }
 
@@ -1198,21 +1198,25 @@ async function loadLocalStorage() {
  * Change init camera by device id
  * @param {string} deviceId
  */
-function changeCamera(deviceId) {
+async function changeInitCamera(deviceId) {
     if (initStream) {
         stopTracks(initStream);
         initVideo.style.display = 'block';
     }
+    // Get video constraints
+    let videoConstraints = getVideoConstraints('default');
+    videoConstraints['deviceId'] = { exact: deviceId };
+
     navigator.mediaDevices
-        .getUserMedia({ video: { deviceId: deviceId } })
+        .getUserMedia({ video: videoConstraints })
         .then((camStream) => {
             initVideo.srcObject = camStream;
             initStream = camStream;
-            console.log('Success attached init video stream');
+            console.log('Success attached init video stream', initStream.getVideoTracks()[0].getSettings());
         })
         .catch((err) => {
-            console.error('[Error] changeCamera', err);
-            userLog('error', 'Error while swapping camera' + err, 'top-end');
+            console.error('[Error] changeInitCamera', err);
+            userLog('error', 'Error while swapping init camera' + err, 'top-end');
         });
 }
 
@@ -1240,7 +1244,7 @@ function checkPeerAudioVideo() {
  * Room and Peer name are ok Join Channel
  */
 async function whoAreYouJoin() {
-    if (isMobileDevice && myVideoStatus && myAudioStatus) refreshLocalMedia();
+    if (isMobileDevice && myVideoStatus && myAudioStatus) await refreshLocalMedia();
     myVideoWrap.style.display = 'inline';
     myVideoParagraph.innerHTML = myPeerName + ' (me)';
     setPeerAvatarImgName('myVideoAvatarImage', myPeerName, useAvatarApi);
@@ -3563,9 +3567,9 @@ function setupMySettings() {
         openTab(e, 'tabLanguages');
     });
     // select audio input
-    audioInputSelect.addEventListener('change', (e) => {
+    audioInputSelect.addEventListener('change', async () => {
         myVideoChange = false;
-        refreshLocalMedia();
+        await refreshLocalMedia();
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
     });
     // select audio output
@@ -3574,9 +3578,9 @@ function setupMySettings() {
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, audioOutputSelect.selectedIndex, audioOutputSelect.value);
     });
     // select video input
-    videoSelect.addEventListener('change', (e) => {
+    videoSelect.addEventListener('change', async () => {
         myVideoChange = true;
-        refreshLocalMedia();
+        await refreshLocalMedia();
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
     });
     // select video quality
@@ -3682,7 +3686,7 @@ function setupVideoUrlPlayer() {
 /**
  * Refresh Local media audio video in - out
  */
-function refreshLocalMedia() {
+async function refreshLocalMedia() {
     // some devices can't swap the video track, if already in execution.
     stopLocalVideoTrack();
     stopLocalAudioTrack();
@@ -4162,8 +4166,10 @@ function handleVideo(e, init, force = null) {
         ? (e.className = myVideoStatus ? className.videoOn : className.videoOff)
         : (e.target.className = myVideoStatus ? className.videoOn : className.videoOff);
 
+    videoBtn.className = myVideoStatus ? className.videoOn : className.videoOff;
+
     if (init) {
-        videoBtn.className = myVideoStatus ? className.videoOn : className.videoOff;
+        initVideoBtn.className = myVideoStatus ? className.videoOn : className.videoOff;
         setTippy(initVideoBtn, myVideoStatus ? 'Stop the video' : 'Start the video', 'top');
         initVideo.style.display = myVideoStatus ? 'block' : 'none';
         initVideoSelect.disabled = !myVideoStatus;
@@ -4287,7 +4293,6 @@ async function toggleScreenSharing(init = false) {
 function setScreenSharingStatus(status) {
     initScreenShareBtn.className = status ? className.screenOff : className.screenOn;
     screenShareBtn.className = status ? className.screenOff : className.screenOn;
-    setTippy(initScreenShareBtn, status ? 'Stop screen sharing' : 'Start screen sharing', 'right-start');
     setTippy(screenShareBtn, status ? 'Stop screen sharing' : 'Start screen sharing', 'right-start');
     disable(initVideoSelect, status);
     disable(initVideoBtn, status);
@@ -4301,11 +4306,13 @@ async function setMyVideoStatusTrue() {
     // Put video status already ON
     localMediaStream.getVideoTracks()[0].enabled = true;
     myVideoStatus = true;
+    initVideoBtn.className = className.videoOn;
     videoBtn.className = className.videoOn;
     myVideoStatusIcon.className = className.videoOn;
     myVideoAvatarImage.style.display = 'none';
     emitPeerStatus('video', myVideoStatus);
     setTippy(videoBtn, 'Stop the video', 'right-start');
+    setTippy(initVideoBtn, 'Stop the video', 'top');
 }
 
 /**
