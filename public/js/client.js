@@ -391,6 +391,7 @@ let whiteboardImgUrlBtn;
 let whiteboardTextBtn;
 let whiteboardLineBtn;
 let whiteboardRectBtn;
+let whiteboardTriangleBtn;
 let whiteboardCircleBtn;
 let whiteboardSaveBtn;
 let whiteboardEraserBtn;
@@ -559,6 +560,7 @@ function getHtmlElementsById() {
     whiteboardTextBtn = getId('whiteboardTextBtn');
     whiteboardLineBtn = getId('whiteboardLineBtn');
     whiteboardRectBtn = getId('whiteboardRectBtn');
+    whiteboardTriangleBtn = getId('whiteboardTriangleBtn');
     whiteboardCircleBtn = getId('whiteboardCircleBtn');
     whiteboardSaveBtn = getId('whiteboardSaveBtn');
     whiteboardEraserBtn = getId('whiteboardEraserBtn');
@@ -669,6 +671,7 @@ function setButtonsToolTip() {
     setTippy(whiteboardTextBtn, 'Add the text', 'bottom');
     setTippy(whiteboardLineBtn, 'Add the line', 'bottom');
     setTippy(whiteboardRectBtn, 'Add the rectangle', 'bottom');
+    setTippy(whiteboardTriangleBtn, 'Add triangle', 'bottom');
     setTippy(whiteboardCircleBtn, 'Add the circle', 'bottom');
     setTippy(whiteboardSaveBtn, 'Save the board', 'bottom');
     setTippy(whiteboardEraserBtn, 'Erase the object', 'bottom');
@@ -3450,6 +3453,9 @@ function setMyWhiteboardBtn() {
     whiteboardRectBtn.addEventListener('click', (e) => {
         whiteboardAddObj('rect');
     });
+    whiteboardTriangleBtn.addEventListener('click', (e) => {
+        whiteboardAddObj('triangle');
+    });
     whiteboardCircleBtn.addEventListener('click', (e) => {
         whiteboardAddObj('circle');
     });
@@ -3518,6 +3524,8 @@ function setMySettingsBtn() {
     // Sounds
     switchSounds.addEventListener('change', (e) => {
         notifyBySound = e.currentTarget.checked;
+        userLog('toast', 'Notify & sounds ' + (notifyBySound ? 'ON' : 'OFF'));
+        playSound('switch');
     });
 
     if (isMobileDevice) {
@@ -3526,13 +3534,15 @@ function setMySettingsBtn() {
         // Push to talk
         switchPushToTalk.addEventListener('change', (e) => {
             isPushToTalkActive = e.currentTarget.checked;
-            userLog('toast', 'Push to talk active - ' + isPushToTalkActive);
+            userLog('toast', 'Push to talk ' + (isPushToTalkActive ? 'ON' : 'OFF'));
+            playSound('switch');
         });
     }
 
     switchAudioPitchBar.addEventListener('change', (e) => {
         isAudioPitchBar = e.currentTarget.checked;
-        userLog('toast', 'Audio pitch bar active - ' + isAudioPitchBar);
+        userLog('toast', 'Audio pitch bar ' + (isAudioPitchBar ? 'ON' : 'OFF'));
+        playSound('switch');
     });
 
     // make chat room draggable for desktop
@@ -4255,14 +4265,24 @@ async function swapCamera() {
  * Stop Local Video Track
  */
 async function stopLocalVideoTrack() {
-    if (useVideo || !isScreenStreaming) localMediaStream.getVideoTracks()[0].stop();
+    if (useVideo || !isScreenStreaming) {
+        const localVideoTrack = localMediaStream.getVideoTracks()[0];
+        if (localVideoTrack) {
+            console.log('stopLocalVideoTrack', localVideoTrack);
+            localVideoTrack.stop();
+        }
+    }
 }
 
 /**
  * Stop Local Audio Track
  */
 async function stopLocalAudioTrack() {
-    localMediaStream.getAudioTracks()[0].stop();
+    const localAudioTrack = localMediaStream.getAudioTracks()[0];
+    if (localAudioTrack) {
+        console.log('stopLocalAudioTrack', localAudioTrack);
+        localAudioTrack.stop();
+    }
 }
 
 /**
@@ -6458,6 +6478,20 @@ function whiteboardAddObj(type) {
                 strokeWidth: wbCanvas.freeDrawingBrush.width,
             });
             addWbCanvasObj(rect);
+            break;
+        case 'triangle':
+            const triangle = new fabric.Triangle({
+                top: 0,
+                left: 0,
+                width: 150,
+                height: 100,
+                fill: 'transparent',
+                stroke: wbCanvas.freeDrawingBrush.color,
+                strokeWidth: wbCanvas.freeDrawingBrush.width,
+            });
+            addWbCanvasObj(triangle);
+            break;
+        default:
             break;
     }
 }
