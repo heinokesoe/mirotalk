@@ -107,6 +107,11 @@ const className = {
 };
 // https://fontawesome.com/search?o=r&m=free
 
+const icons = {
+    fileSend: '<i class="fa-solid fa-file-export"></i>',
+    fileReceive: '<i class="fa-solid fa-file-import"></i>',
+};
+
 const myRoomUrl = window.location.href;
 
 // Local Storage class
@@ -233,6 +238,7 @@ let camera = 'user'; // user = front-facing camera on a smartphone. | environmen
 let roomLocked = false;
 let myVideoChange = false;
 let myHandStatus = false;
+let myVideoStatusBefore = false;
 let myVideoStatus = false;
 let myAudioStatus = false;
 let myScreenStatus = false;
@@ -1606,6 +1612,9 @@ function handleIceCandidate(config) {
  */
 function handleDisconnect(reason) {
     console.log('Disconnected from signaling server', { reason: reason });
+
+    checkRecording();
+
     for (let peer_id in peerMediaElements) {
         peerMediaElements[peer_id].parentNode.removeChild(peerMediaElements[peer_id]);
         adaptAspectRatio();
@@ -1630,6 +1639,8 @@ function handleDisconnect(reason) {
  */
 function handleRemovePeer(config) {
     console.log('Signaling server said to remove peer:', config);
+
+    checkRecording();
 
     let peer_id = config.peer_id;
 
@@ -3979,7 +3990,7 @@ function gotDevices(deviceInfos) {
  * @param {object} err user media error
  */
 function handleError(err) {
-    console.log('navigator.MediaDevices.getUserMedia error: ', err);
+    console.error('navigator.MediaDevices.getUserMedia error: ', err);
     switch (err.name) {
         case 'OverconstrainedError':
             userLog(
@@ -4300,6 +4311,11 @@ async function toggleScreenSharing(init = false) {
     let screenMediaPromise = null;
 
     try {
+        // Going to save webcam video status before to screen share
+        if (!isScreenStreaming) {
+            myVideoStatusBefore = myVideoStatus;
+            console.log('My video status before screen sharing: ' + myVideoStatusBefore);
+        }
         screenMediaPromise = isScreenStreaming
             ? await navigator.mediaDevices.getUserMedia(await getAudioVideoConstraints())
             : await navigator.mediaDevices.getDisplayMedia(constraints);
@@ -4332,7 +4348,9 @@ async function toggleScreenSharing(init = false) {
             }
 
             // Disable cam video when screen sharing stop
-            if (!isScreenStreaming && !init) setMyVideoOff(myPeerName);
+            if (!init && !isScreenStreaming && !myVideoStatusBefore) setMyVideoOff(myPeerName);
+            // Enable cam video when screen sharing stop
+            if (!init && !isScreenStreaming && myVideoStatusBefore) setMyVideoStatusTrue();
 
             myVideo.classList.toggle('mirror');
             setScreenSharingStatus(isScreenStreaming);
@@ -4525,6 +4543,17 @@ async function refreshMyLocalStream(stream, localAudioTrackChange = false) {
 }
 
 /**
+ * Check if recording is active, if yes,
+ * on disconnect, remove peer, kick out or leave room, we going to save it
+ */
+function checkRecording() {
+    if (isStreamRecording || myVideoParagraph.innerHTML.includes('REC')) {
+        console.log('Going to save recording');
+        stopStreamRecording();
+    }
+}
+
+/**
  * Start recording time
  */
 function startRecordingTime() {
@@ -4670,8 +4699,8 @@ function handleMediaRecorderStop(event) {
     playSound('recStop');
     console.log('MediaRecorder stopped: ', event);
     console.log('MediaRecorder Blobs: ', recordedBlobs);
-    myVideoParagraph.innerHTML = myPeerName + ' (me)';
     isStreamRecording = false;
+    myVideoParagraph.innerHTML = myPeerName + ' (me)';
     if (isRecScreenStream) {
         recScreenStream.getTracks().forEach((track) => {
             if (track.kind === 'video') track.stop();
@@ -6974,10 +7003,24 @@ function sendFileInformations(file, peer_id, broadcast = false) {
                 fileType: fileToSend.type,
             },
         };
+
         // keep trace of sent file in chat
-        appendMessage(myPeerName, rightChatAvatar, 'right', 'Send file: \n' + toHtmlJson(fileInfo), false);
+        appendMessage(
+            myPeerName,
+            rightChatAvatar,
+            'right',
+            `${icons.fileSend} File send: 
+            <br/> 
+            <ul>
+                <li>Name: ${fileToSend.name}</li>
+                <li>Size: ${bytesToSize(fileToSend.size)}</li>
+            </ul>`,
+            false,
+        );
+
         // send some metadata about our file to peers in the room
         sendToServer('fileInfo', fileInfo);
+
         // send the File
         setTimeout(() => {
             sendFileData(peer_id, broadcast);
@@ -7023,7 +7066,13 @@ function handleFileInfo(config) {
         incomingFileInfo.peer_name,
         leftChatAvatar,
         'left',
-        'Receive file: \n' + toHtmlJson(incomingFileInfo),
+        `${icons.fileReceive} File receive: 
+        <br/> 
+        <ul>
+            <li>From: ${incomingFileInfo.peer_name}</li>
+            <li>Name: ${incomingFileInfo.file.fileName}</li>
+            <li>Size: ${bytesToSize(incomingFileInfo.file.fileSize)}</li>
+        </ul>`,
         !incomingFileInfo.broadcast,
         incomingFileInfo.peer_id,
     );
@@ -7386,6 +7435,7 @@ function handleKickedOut(config) {
             popup: 'animate__animated animate__fadeOutUp',
         },
     }).then(() => {
+        checkRecording();
         openURL('/newcall');
     });
 }
@@ -7429,6 +7479,7 @@ function leaveRoom() {
     if (surveyActive) {
         leaveFeedback();
     } else {
+        checkRecording();
         openURL('/newcall');
     }
 }
@@ -7454,6 +7505,7 @@ function leaveFeedback() {
             popup: 'animate__animated animate__fadeOutUp',
         },
     }).then((result) => {
+        checkRecording();
         if (result.isConfirmed) {
             openURL(surveyURL);
         } else {
