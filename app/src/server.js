@@ -222,7 +222,7 @@ app.get(['/login'], (req, res) => {
     if (hostCfg.protected == true) {
         const ip = getIP(req);
         log.debug(`Request login to host from: ${ip}`, req.query);
-        const { username, password } = req.query;
+        const { username, password } = checkXSS(req.query);
         if (username == hostCfg.username && password == hostCfg.password) {
             hostCfg.authenticated = true;
             authHost = new Host(ip, true);
@@ -292,7 +292,7 @@ app.get('/join/', (req, res) => {
             https://mirotalk.up.railway.app/join?room=test&name=mirotalk&audio=1&video=1&screen=1&notify=1
             https://mirotalk.herokuapp.com/join?room=test&name=mirotalk&audio=1&video=1&screen=1&notify=1
         */
-        const { room, name, audio, video, screen, notify } = req.query;
+        const { room, name, audio, video, screen, notify } = checkXSS(req.query);
         // all the params are mandatory for the direct room join
         if (room && name && audio && video && screen && notify) {
             return res.sendFile(views.client);
@@ -633,9 +633,28 @@ io.sockets.on('connect', async (socket) => {
             return socket.emit('roomIsLocked');
         }
 
+        // collect presenters grp by channels
+        if (Object.keys(presenters[channel]).length === 0) {
+            presenters[channel] = {
+                peer_ip: peer_ip,
+                peer_name: peer_name,
+                peer_uuid: peer_uuid,
+                is_presenter: true,
+            };
+        }
+
+        // If presenter must mach the name - uuid
+        const isPresenter =
+            Object.keys(presenters[channel]).length > 1 &&
+            presenters[channel]['peer_name'] == peer_name &&
+            presenters[channel]['peer_uuid'] == peer_uuid;
+
+        log.debug('[Join] - connected presenters grp by roomId', presenters);
+
         // collect peers info grp by channels
         peers[channel][socket.id] = {
             peer_name: peer_name,
+            peer_presenter: isPresenter,
             peer_video: peer_video,
             peer_audio: peer_audio,
             peer_video_status: peer_video_status,
@@ -652,25 +671,7 @@ io.sockets.on('connect', async (socket) => {
         channels[channel][socket.id] = socket;
         socket.channels[channel] = channel;
 
-        // collect presenters grp by channels
-        if (Object.keys(presenters[channel]).length === 0) {
-            presenters[channel] = {
-                peer_ip: peer_ip,
-                peer_name: peer_name,
-                peer_uuid: peer_uuid,
-                is_presenter: true,
-            };
-        }
-
         const peerCounts = Object.keys(peers[channel]).length;
-        // If presenter must mach the public ipv4 - name - uuid
-        const isPresenter =
-            Object.keys(presenters[channel]).length > 1 &&
-            presenters[channel]['peer_ip'] == peer_ip &&
-            presenters[channel]['peer_name'] == peer_name &&
-            presenters[channel]['peer_uuid'] == peer_uuid;
-
-        log.debug('[Join] - connected presenters grp by roomId', presenters);
 
         // Send some server info to joined peer
         await sendToPeer(socket.id, sockets, 'serverInfo', {
