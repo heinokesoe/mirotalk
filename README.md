@@ -38,6 +38,7 @@
 -   Recording your Screen, Audio and Video
 -   Snapshot the video frame and save it as image png
 -   Chat with Emoji Picker to show you feeling, private messages, Markdown support, possibility to Save the conversations, and many more
+-   ChatGPT (openAI), designed to answer users' questions, provide relevant information, and connect them with relevant resources
 -   Speech recognition to send the speeches
 -   Push to talk, like a walkie-talkie.
 -   Advance collaborative whiteboard for the teachers
@@ -182,7 +183,7 @@ You can start videoconferencing directly from your Local PC, and be reachable fr
 
 You can [Check here](https://p2p.mirotalk.com/test), if you are full covered by the MiroTalk default IceServers ([Stun](https://en.wikipedia.org/wiki/STUN) & [Turn](https://en.wikipedia.org/wiki/TURN)).
 
-If not, you can change it in the `.env` file and test it by the URL eg:
+`If not`, install your own by following [this steps](./docs/coturn.md), edit the `.env` file and test it by the URL eg:
 
 ```html
 https://p2p.mirotalk.com//test?iceServers=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:openrelay.metered.ca:443","username":"openrelayproject","credential":"openrelayproject"}]
