@@ -10,6 +10,7 @@ http://patorjk.com/software/taag/#p=display&f=ANSI%20Regular&t=Server
 dependencies: {
     @sentry/node            : https://www.npmjs.com/package/@sentry/node
     @sentry/integrations    : https://www.npmjs.com/package/@sentry/integrations
+    axios                   : https://www.npmjs.com/package/axios
     body-parser             : https://www.npmjs.com/package/body-parser
     compression             : https://www.npmjs.com/package/compression
     colors                  : https://www.npmjs.com/package/colors
@@ -52,8 +53,9 @@ const compression = require('compression');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const checkXSS = require('./xss.js');
+const axios = require('axios');
 const app = express();
+const checkXSS = require('./xss.js');
 const Host = require('./host');
 const Logs = require('./logs');
 const log = new Logs('server');
@@ -119,6 +121,9 @@ const turnEnabled = process.env.TURN_ENABLED == 'true' ? true : false;
 const turnUrls = process.env.TURN_URLS;
 const turnUsername = process.env.TURN_USERNAME;
 const turnCredential = process.env.TURN_PASSWORD;
+
+// IP Lookup
+const IPLookupEnabled = process.env.IP_LOOKUP_ENABLED == 'true';
 
 // Survey URL
 const surveyEnabled = process.env.SURVEY_ENABLED == 'true' ? true : false;
@@ -295,12 +300,6 @@ app.get(['/test'], (req, res) => {
     if (Object.keys(req.query).length > 0) {
         log.debug('Request Query', req.query);
     }
-    /*
-        http://localhost:3000/test?iceServers=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:openrelay.metered.ca:443","username":"openrelayproject","credential":"openrelayproject"}]
-        https://p2p.mirotalk.com//test?iceServers=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:openrelay.metered.ca:443","username":"openrelayproject","credential":"openrelayproject"}]
-        https://mirotalk.up.railway.app/test?iceServers=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:openrelay.metered.ca:443","username":"openrelayproject","credential":"openrelayproject"}]
-        https://mirotalk.herokuapp.com/test?iceServers=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:openrelay.metered.ca:443","username":"openrelayproject","credential":"openrelayproject"}]
-    */
     res.sendFile(views.stunTurn);
 });
 
@@ -422,20 +421,15 @@ app.get('*', function (req, res) {
 
 /**
  * You should probably use a different stun-turn server
- * doing commercial stuff, also see:
- *
- * https://github.com/coturn/coturn
- * https://gist.github.com/zziuni/3741933
- * https://www.twilio.com/docs/stun-turn
- *
- * Check the functionality of STUN/TURN servers:
- * https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/
+ * doing commercial stuff, check out: https://github.com/coturn/coturn
+ * Installation doc: ../docs/coturn.md
  */
 const iceServers = [];
 
-// Stun is always needed
+// Stun is mandatory
 iceServers.push({ urls: stun });
 
+// Turn is recommended if direct peer to peer connection is not possible
 if (turnEnabled) {
     iceServers.push({
         urls: turnUrls,
@@ -443,12 +437,10 @@ if (turnEnabled) {
         credential: turnCredential,
     });
 } else {
-    // As backup if not configured, please configure your own in the .env file
-    // https://www.metered.ca/tools/openrelay/
     iceServers.push({
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
+        urls: 'turn:a.relay.metered.ca:443',
+        username: 'e8dd65b92c62d3e36cafb807',
+        credential: 'uWdWNmkhvyqTEswO',
     });
 }
 
@@ -487,6 +479,7 @@ async function ngrokStart() {
             api_key_secret: api_key_secret,
             use_self_signed_certificate: isHttps,
             own_turn_enabled: turnEnabled,
+            ip_lookup_enabled: IPLookupEnabled,
             chatGPT_enabled: configChatGPT.enabled,
             slack_enabled: slackEnabled,
             sentry_enabled: sentryEnabled,
@@ -534,6 +527,7 @@ server.listen(port, null, () => {
             api_key_secret: api_key_secret,
             use_self_signed_certificate: isHttps,
             own_turn_enabled: turnEnabled,
+            ip_lookup_enabled: IPLookupEnabled,
             chatGPT_enabled: configChatGPT.enabled,
             slack_enabled: slackEnabled,
             sentry_enabled: sentryEnabled,
@@ -648,15 +642,23 @@ io.sockets.on('connect', async (socket) => {
      * On peer join
      */
     socket.on('join', async (cfg) => {
+        // Get peer IPv4 (::1 Its the loopback address in ipv6, equal to 127.0.0.1 in ipv4)
+        const peer_ip = socket.handshake.headers['x-forwarded-for'] || socket.conn.remoteAddress;
+
+        // Get peer Geo Location
+        if (IPLookupEnabled && (peer_ip != '::1' || peer_ip != '127.0.0.1')) {
+            cfg.peer_geo = await getPeerGeoLocation(peer_ip);
+        }
+
         // Prevent XSS injection
         const config = checkXSS(cfg);
+
         // log.debug('Join room', config);
         log.debug('[' + socket.id + '] join ', config);
 
         const {
             channel,
             channel_password,
-            peer_ip,
             peer_uuid,
             peer_name,
             peer_video,
@@ -1129,6 +1131,22 @@ io.sockets.on('connect', async (socket) => {
         }
     }
 }); // end [sockets.on-connect]
+
+/**
+ * get Peer geo Location using GeoJS
+ * https://www.geojs.io/docs/v1/endpoints/geo/
+ *
+ * @param {string} ip
+ * @returns json
+ */
+async function getPeerGeoLocation(ip) {
+    const endpoint = `https://get.geojs.io/v1/ip/geo/${ip}.json`;
+    log.debug('Get peer geo', { ip: ip, endpoint: endpoint });
+    return axios
+        .get(endpoint)
+        .then((response) => response.data)
+        .catch((error) => log.error(error));
+}
 
 /**
  * Get ip

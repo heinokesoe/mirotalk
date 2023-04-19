@@ -25,8 +25,6 @@
 
 const signalingServer = getSignalingServer();
 const roomId = getRoomId();
-const peerLoockupUrl = 'https://extreme-ip-lookup.com/json/?key=demo2'; // get your API Key at https://extreme-ip-lookup.com
-const peerIPUrl = 'https://api.ipify.org?format=json';
 const welcomeImg = '../images/image-placeholder.png';
 const shareUrlImg = '../images/image-placeholder.png';
 const leaveRoomImg = '../images/leave-room.png';
@@ -140,12 +138,16 @@ const buttons = {
         showAboutBtn: true, // Please keep me always true, Thank you!
     },
     chat: {
+        showMaxBtn: true,
         showSaveMessageBtn: true,
         showMarkDownBtn: true,
         showChatGPTBtn: true,
         showFileShareBtn: true,
         showShareVideoAudioBtn: true,
         showParticipantsBtn: true,
+    },
+    caption: {
+        showMaxBtn: true,
     },
     settings: {
         showTabRoomParticipants: true,
@@ -173,8 +175,6 @@ const buttons = {
         showZoomInOutBtn: true,
     },
 };
-
-const backupIceServers = [{ urls: 'stun:stun.l.google.com:19302' }]; // backup iceServers
 
 const isRulesActive = true; // Presenter can do anything, guest is slightly moderate, if false no Rules for the room.
 
@@ -206,8 +206,6 @@ let surveyActive = true; // when leaving the room give a feedback, if false will
 
 let surveyURL = 'https://www.questionpro.com/t/AUs7VZq00L';
 
-let myWanIP = null;
-
 let myPeerId; // socket.id
 let peerInfo = {}; // Some peer info
 let userAgent; // User agent info
@@ -234,7 +232,6 @@ let mirotalkTheme = 'dark'; // dark - grey ...
 let mirotalkBtnsBar = 'vertical'; // vertical - horizontal
 let pinVideoPositionSelect;
 let swalBackground = 'rgba(0, 0, 0, 0.7)'; // black - #16171b - transparent ...
-let peerGeo;
 let myPeerName = getPeerName();
 let myPeerUUID = getUUID();
 let isScreenEnabled = getScreenEnabled();
@@ -329,6 +326,8 @@ let msgerCPBtn;
 let msgerClean;
 let msgerSaveBtn;
 let msgerClose;
+let msgerMaxBtn;
+let msgerMinBtn;
 let msgerChat;
 let msgerEmojiBtn;
 let msgerMarkdownBtn;
@@ -343,6 +342,8 @@ let msgerSendBtn;
 let captionDraggable;
 let captionHeader;
 let captionTheme;
+let captionMaxBtn;
+let captionMinBtn;
 let captionClean;
 let captionSaveBtn;
 let captionClose;
@@ -508,6 +509,8 @@ function getHtmlElementsById() {
     msgerClean = getId('msgerClean');
     msgerSaveBtn = getId('msgerSaveBtn');
     msgerClose = getId('msgerClose');
+    msgerMaxBtn = getId('msgerMaxBtn');
+    msgerMinBtn = getId('msgerMinBtn');
     msgerChat = getId('msgerChat');
     msgerEmojiBtn = getId('msgerEmojiBtn');
     msgerMarkdownBtn = getId('msgerMarkdownBtn');
@@ -529,6 +532,8 @@ function getHtmlElementsById() {
     captionDraggable = getId('captionDraggable');
     captionHeader = getId('captionHeader');
     captionTheme = getId('captionTheme');
+    captionMaxBtn = getId('captionMaxBtn');
+    captionMinBtn = getId('captionMinBtn');
     captionClean = getId('captionClean');
     captionSaveBtn = getId('captionSaveBtn');
     captionClose = getId('captionClose');
@@ -648,6 +653,8 @@ function setButtonsToolTip() {
     setTippy(msgerClean, 'Clean the messages', 'top');
     setTippy(msgerSaveBtn, 'Save the messages', 'top');
     setTippy(msgerClose, 'Close', 'right');
+    setTippy(msgerMaxBtn, 'Maximize', 'right');
+    setTippy(msgerMinBtn, 'Minimize', 'right');
     setTippy(msgerEmojiBtn, 'Emoji', 'top');
     setTippy(msgerMarkdownBtn, 'Markdown', 'top');
     setTippy(msgerGPTBtn, 'ChatGPT', 'top');
@@ -660,9 +667,13 @@ function setButtonsToolTip() {
     setTippy(msgerCPCloseBtn, 'Close', 'left');
     // caption buttons
     setTippy(captionClose, 'Close', 'right');
+    setTippy(captionMaxBtn, 'Maximize', 'right');
+    setTippy(captionMinBtn, 'Minimize', 'right');
     setTippy(captionTheme, 'Ghost theme', 'top');
     setTippy(captionClean, 'Clean the messages', 'top');
     setTippy(captionSaveBtn, 'Save the messages', 'top');
+    setTippy(speechRecognitionStart, 'Start', 'top');
+    setTippy(speechRecognitionStop, 'Stop', 'top');
     // settings
     setTippy(mySettingsCloseBtn, 'Close', 'right');
     setTippy(myPeerNameSetBtn, 'Change name', 'top');
@@ -742,35 +753,6 @@ function getPeerInfo() {
         browserName: DetectRTC.browser.name,
         browserVersion: DetectRTC.browser.version,
     };
-}
-
-/**
- * Get approximative peer geolocation
- * Get your API Key at https://extreme-ip-lookup.com
- */
-async function getPeerGeoLocation() {
-    console.log('03.1 Get peer geo location');
-    fetch(peerLoockupUrl)
-        .then((res) => res.json())
-        .then((outJson) => {
-            peerGeo = outJson;
-        })
-        .catch((err) => console.warn(err));
-}
-
-/**
- * Get my wanIP
- * https://www.ipify.org/
- */
-async function getMyIP() {
-    console.log('03.2 Get My WanIP');
-    fetch(peerIPUrl)
-        .then((res) => res.json())
-        .then((outJson) => {
-            myWanIP = outJson['ip'];
-            console.log('My Public IPv4 is: ', myWanIP);
-        })
-        .catch((err) => console.warn(err));
 }
 
 /**
@@ -1002,8 +984,6 @@ async function handleConnect() {
         await joinToChannel();
     } else {
         await initEnumerateDevices();
-        await getPeerGeoLocation();
-        await getMyIP();
         await setupLocalMedia();
         await whoAreYou();
     }
@@ -1117,12 +1097,15 @@ function handleButtonsRule() {
     elemDisplay(mySettingsBtn, buttons.main.showMySettingsBtn);
     elemDisplay(aboutBtn, buttons.main.showAboutBtn);
     // chat
+    elemDisplay(msgerMaxBtn, !isMobileDevice && buttons.chat.showMaxBtn);
     elemDisplay(msgerSaveBtn, buttons.chat.showSaveMessageBtn);
     elemDisplay(msgerMarkdownBtn, buttons.chat.showMarkDownBtn);
     elemDisplay(msgerGPTBtn, buttons.chat.showChatGPTBtn);
     elemDisplay(msgerShareFileBtn, buttons.chat.showFileShareBtn);
     elemDisplay(msgerVideoUrlBtn, buttons.chat.showShareVideoAudioBtn);
     elemDisplay(msgerCPBtn, buttons.chat.showParticipantsBtn);
+    // caption
+    elemDisplay(captionMaxBtn, !isMobileDevice && buttons.caption.showMaxBtn);
     // Settings
     elemDisplay(muteEveryoneBtn, buttons.settings.showMuteEveryoneBtn);
     elemDisplay(hideEveryoneBtn, buttons.settings.showHideEveryoneBtn);
@@ -1419,8 +1402,6 @@ async function joinToChannel() {
         channel: roomId,
         channel_password: thisRoomPassword,
         peer_info: peerInfo,
-        peer_geo: peerGeo,
-        peer_ip: peerGeo.query || myWanIP,
         peer_uuid: myPeerUUID,
         peer_name: myPeerName,
         peer_video: useVideo,
@@ -1457,7 +1438,7 @@ async function handleAddPeer(config) {
     console.log('iceServers', iceServers[0]);
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection
-    peerConnection = new RTCPeerConnection({ iceServers: iceServers ? iceServers : backupIceServers });
+    peerConnection = new RTCPeerConnection({ iceServers: iceServers });
     peerConnections[peer_id] = peerConnection;
 
     allPeers = peers;
@@ -3412,8 +3393,18 @@ function setChatRoomBtn() {
 
     // close chat room - show left button and status menu if hide
     msgerClose.addEventListener('click', (e) => {
+        chatMinimize();
         hideChatRoomAndEmojiPicker();
         showButtonsBarAndMenu();
+    });
+
+    // Maximize chat
+    msgerMaxBtn.addEventListener('click', (e) => {
+        chatMaximize();
+    });
+    // minimize chat
+    msgerMinBtn.addEventListener('click', (e) => {
+        chatMinimize();
     });
 
     // Markdown on-off
@@ -3508,6 +3499,15 @@ function setCaptionRoomBtn() {
             }
         });
 
+        // Maximize caption
+        captionMaxBtn.addEventListener('click', (e) => {
+            captionMaximize();
+        });
+        // minimize caption
+        captionMinBtn.addEventListener('click', (e) => {
+            captionMinimize();
+        });
+
         // ghost theme + undo
         captionTheme.addEventListener('click', (e) => {
             if (e.target.className == className.ghost) {
@@ -3537,6 +3537,7 @@ function setCaptionRoomBtn() {
 
         // close caption box - show left button and status menu if hide
         captionClose.addEventListener('click', (e) => {
+            captionMinimize();
             hideCaptionBox();
             showButtonsBarAndMenu();
         });
@@ -4937,12 +4938,16 @@ function createChatDataChannel(peer_id) {
 }
 
 /**
- * Set the chat room on full screen mode for mobile
+ * Set the chat room & caption on full screen mode for mobile
  */
 function setChatRoomAndCaptionForMobile() {
     if (isMobileDevice) {
+        // chat full screen
         document.documentElement.style.setProperty('--msger-height', '99%');
         document.documentElement.style.setProperty('--msger-width', '99%');
+        // caption full screen
+        document.documentElement.style.setProperty('--caption-height', '99%');
+        document.documentElement.style.setProperty('--caption-width', '99%');
     } else {
         // make chat room draggable for desktop
         dragElement(msgerDraggable, msgerHeader);
@@ -4979,10 +4984,70 @@ function showCaptionDraggable() {
     }
     captionBtn.className = 'far fa-closed-captioning';
     captionDraggable.style.top = '50%';
-    captionDraggable.style.left = isMobileDevice ? '50' : '75%';
+    captionDraggable.style.left = isMobileDevice ? '50%' : '75%';
     captionDraggable.style.display = 'flex';
     isCaptionBoxVisible = true;
     setTippy(captionBtn, 'Close the caption', 'right-start');
+}
+
+/**
+ * Chat maximize
+ */
+function chatMaximize() {
+    elemDisplay(msgerMaxBtn, false);
+    elemDisplay(msgerMinBtn, true);
+    chatCenter();
+    document.documentElement.style.setProperty('--msger-width', '100%');
+    document.documentElement.style.setProperty('--msger-height', '100%');
+}
+
+/**
+ * Chat minimize
+ */
+function chatMinimize() {
+    elemDisplay(msgerMinBtn, false);
+    elemDisplay(msgerMaxBtn, true);
+    chatCenter();
+    document.documentElement.style.setProperty('--msger-width', '420px');
+    document.documentElement.style.setProperty('--msger-height', '680px');
+}
+
+/**
+ * Set chat position
+ */
+function chatCenter() {
+    msgerDraggable.style.top = '50%';
+    msgerDraggable.style.left = '50%';
+}
+
+/**
+ * Caption maximize
+ */
+function captionMaximize() {
+    elemDisplay(captionMaxBtn, false);
+    elemDisplay(captionMinBtn, true);
+    captionCenter();
+    document.documentElement.style.setProperty('--caption-width', '100%');
+    document.documentElement.style.setProperty('--caption-height', '100%');
+}
+
+/**
+ * Caption minimize
+ */
+function captionMinimize() {
+    elemDisplay(captionMinBtn, false);
+    elemDisplay(captionMaxBtn, true);
+    captionCenter();
+    document.documentElement.style.setProperty('--caption-width', '420px');
+    document.documentElement.style.setProperty('--caption-height', '680px');
+}
+
+/**
+ * Set caption position
+ */
+function captionCenter() {
+    captionDraggable.style.top = '50%';
+    captionDraggable.style.left = '50%';
 }
 
 /**
@@ -5345,7 +5410,7 @@ async function msgerAddPeers(peers) {
                         cols="1"
                         id="${peer_id}_pMsgInput"
                         class="msger-input"
-                        placeholder="💬 Enter your message..."
+                        placeholder="Write private message..."
                     ></textarea>
                     <button id="${peer_id}_pMsgBtn" class="${className.msgPrivate}" value="${peer_name}"></button>
                 </div>
