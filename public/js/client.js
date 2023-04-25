@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.0.3
+ * @version 1.0.4
  *
  */
 
@@ -150,6 +150,7 @@ const buttons = {
         showMaxBtn: true,
     },
     settings: {
+        showTabRoomPeerName: true,
         showTabRoomParticipants: true,
         showTabRoomSecurity: true,
         showMuteEveryoneBtn: true,
@@ -380,6 +381,7 @@ let videoObjFitSelect;
 
 let btnsBarSelect;
 let selectors;
+let tabRoomPeerName;
 let tabRoomParticipants;
 let tabRoomSecurity;
 // my video element
@@ -562,6 +564,7 @@ function getHtmlElementsById() {
     videoObjFitSelect = getId('videoObjFitSelect');
     btnsBarSelect = getId('mirotalkBtnsBar');
     pinVideoPositionSelect = getId('pinVideoPositionSelect');
+    tabRoomPeerName = getId('tabRoomPeerName');
     tabRoomParticipants = getId('tabRoomParticipants');
     tabRoomSecurity = getId('tabRoomSecurity');
     // my conference name, hand, video - audio status
@@ -1000,7 +1003,7 @@ function handleServerInfo(config) {
     surveyActive = survey.active;
     surveyURL = survey.url;
 
-    console.log('13. Peers count', peers_count);
+    console.log('13. Server info', config);
 
     // Limit room to n peers
     if (userLimitsActive && peers_count > usersCountLimit) {
@@ -1090,7 +1093,7 @@ function handleButtonsRule() {
     //elemDisplay(screenShareBtn, buttons.main.showScreenBtn); // auto-detected
     elemDisplay(recordStreamBtn, buttons.main.showRecordStreamBtn);
     elemDisplay(chatRoomBtn, buttons.main.showChatRoomBtn);
-    //elemDisplay(captionBtn, buttons.main.showCaptionRoomBtn); // auto-detected
+    elemDisplay(captionBtn, buttons.main.showCaptionRoomBtn && speechRecognition); // auto-detected
     elemDisplay(myHandBtn, buttons.main.showMyHandBtn);
     elemDisplay(whiteboardBtn, buttons.main.showWhiteboardBtn);
     elemDisplay(fileShareBtn, buttons.main.showFileShareBtn);
@@ -1112,6 +1115,7 @@ function handleButtonsRule() {
     elemDisplay(ejectEveryoneBtn, buttons.settings.showEjectEveryoneBtn);
     elemDisplay(lockRoomBtn, buttons.settings.showLockRoomBtn);
     elemDisplay(unlockRoomBtn, buttons.settings.showUnlockRoomBtn);
+    elemDisplay(tabRoomPeerName, buttons.settings.showTabRoomPeerName);
     elemDisplay(tabRoomParticipants, buttons.settings.showTabRoomParticipants);
     elemDisplay(tabRoomSecurity, buttons.settings.showTabRoomSecurity);
 }
@@ -1385,7 +1389,7 @@ function checkPeerAudioVideo() {
 async function whoAreYouJoin() {
     if (isMobileDevice && myVideoStatus && myAudioStatus) await refreshLocalMedia();
     myVideoWrap.style.display = 'inline';
-    myVideoParagraph.innerHTML = myPeerName + ' (me)';
+    myVideoParagraph.innerText = myPeerName + ' (me)';
     setPeerAvatarImgName('myVideoAvatarImage', myPeerName);
     setPeerChatAvatarImgName('right', myPeerName);
     joinToChannel();
@@ -1996,13 +2000,13 @@ function addChild(device, els) {
         option.value = deviceId;
         switch (kind) {
             case 'videoinput':
-                option.innerHTML = `📹 ` + label || `📹 camera ${el.length + 1}`;
+                option.innerText = `📹 ` + label || `📹 camera ${el.length + 1}`;
                 break;
             case 'audioinput':
-                option.innerHTML = `🎤 ` + label || `🎤 microphone ${el.length + 1}`;
+                option.innerText = `🎤 ` + label || `🎤 microphone ${el.length + 1}`;
                 break;
             case 'audiooutput':
-                option.innerHTML = `🔈 ` + label || `🔈 speaker ${el.length + 1}`;
+                option.innerText = `🔈 ` + label || `🔈 speaker ${el.length + 1}`;
                 break;
             default:
                 break;
@@ -3141,7 +3145,7 @@ function startCountTime() {
     callStartTime = Date.now();
     setInterval(function printTime() {
         callElapsedTime = Date.now() - callStartTime;
-        countTime.innerHTML = getTimeToString(callElapsedTime);
+        countTime.innerText = getTimeToString(callElapsedTime);
     }, 1000);
 }
 
@@ -4719,7 +4723,7 @@ async function refreshMyLocalStream(stream, localAudioTrackChange = false) {
  * on disconnect, remove peer, kick out or leave room, we going to save it
  */
 function checkRecording() {
-    if (isStreamRecording || myVideoParagraph.innerHTML.includes('REC')) {
+    if (isStreamRecording || myVideoParagraph.innerText.includes('REC')) {
         console.log('Going to save recording');
         stopStreamRecording();
     }
@@ -4733,7 +4737,7 @@ function startRecordingTime() {
     let rc = setInterval(function printTime() {
         if (isStreamRecording) {
             recElapsedTime = Date.now() - recStartTime;
-            myVideoParagraph.innerHTML = myPeerName + '&nbsp;&nbsp; 🔴 &nbsp; REC ' + getTimeToString(recElapsedTime);
+            myVideoParagraph.innerText = myPeerName + ' 🔴 REC ' + getTimeToString(recElapsedTime);
             return;
         }
         clearInterval(rc);
@@ -4872,7 +4876,7 @@ function handleMediaRecorderStop(event) {
     console.log('MediaRecorder stopped: ', event);
     console.log('MediaRecorder Blobs: ', recordedBlobs);
     isStreamRecording = false;
-    myVideoParagraph.innerHTML = myPeerName + ' (me)';
+    myVideoParagraph.innerText = myPeerName + ' (me)';
     if (isRecScreenStream) {
         recScreenStream.getTracks().forEach((track) => {
             if (track.kind === 'video') track.stop();
@@ -5151,7 +5155,8 @@ async function sendChatMessage() {
         return userLog('info', "Can't send message, no participants in the room");
     }
 
-    const msg = checkMsg(msgerInput.value.trim());
+    msgerInput.value = filterXSS(msgerInput.value.trim());
+    const msg = checkMsg(msgerInput.value);
 
     // empty msg or
     if (!msg) {
@@ -5171,11 +5176,12 @@ async function sendChatMessage() {
 function handleDataChannelChat(dataMessage) {
     if (!dataMessage) return;
 
+    // sanitize all params
     const msgFrom = filterXSS(dataMessage.from);
     const msgTo = filterXSS(dataMessage.to);
-    const msg = dataMessage.msg;
-    const msgPrivate = dataMessage.privateMsg;
-    const msgId = dataMessage.id;
+    const msg = filterXSS(dataMessage.msg);
+    const msgPrivate = filterXSS(dataMessage.privateMsg);
+    const msgId = filterXSS(dataMessage.id);
 
     // private message but not for me return
     if (msgPrivate && msgTo != myPeerName) return;
@@ -5237,6 +5243,9 @@ function handleSpeechTranscript(config) {
     if (!config) return;
     console.log('Handle speech transcript', config);
 
+    config.text_data = filterXSS(config.text_data);
+    config.peer_name = filterXSS(config.peer_name);
+
     const { peer_name, text_data } = config;
 
     const time_stamp = getFormatDate(new Date());
@@ -5285,36 +5294,44 @@ function escapeSpecialChars(regex) {
 function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
     let time = getFormatDate(new Date());
 
+    // sanitize all params
+    const getFrom = filterXSS(from);
+    const getImg = filterXSS(img);
+    const getSide = filterXSS(side);
+    const getMsg = filterXSS(msg);
+    const getPrivateMsg = filterXSS(privateMsg);
+    const getMsgId = filterXSS(msgId);
+
     // collect chat msges to save it later
     chatMessages.push({
         time: time,
-        from: from,
-        msg: msg,
-        privateMsg: privateMsg,
+        from: getFrom,
+        msg: getMsg,
+        privateMsg: getPrivateMsg,
     });
 
     // check if i receive a private message
-    let msgBubble = privateMsg ? 'private-msg-bubble' : 'msg-bubble';
+    let msgBubble = getPrivateMsg ? 'private-msg-bubble' : 'msg-bubble';
 
     let msgHTML = `
-	<div id="msg-${chatMessagesId}" class="msg ${side}-msg">
-        <img class="msg-img" src="${img}" />
+	<div id="msg-${chatMessagesId}" class="msg ${getSide}-msg">
+        <img class="msg-img" src="${getImg}" />
 		<div class=${msgBubble}>
             <div class="msg-info">
-                <div class="msg-info-name">${from}</div>
+                <div class="msg-info-name">${getFrom}</div>
                 <div class="msg-info-time">${time}</div>
             </div>
-            <div id="${chatMessagesId}" class="msg-text">${msg}
+            <div id="${chatMessagesId}" class="msg-text">${getMsg}
                 <hr/>
     `;
     // add btn direct reply to private message
-    if (privateMsg && msgId != null && msgId != myPeerId) {
+    if (getPrivateMsg && getMsgId != null && getMsgId != myPeerId) {
         msgHTML += `
                 <button 
                     class="${className.msgPrivate}"
                     id="msg-private-reply-${chatMessagesId}"
                     style="color:#fff; border:none; background:transparent;"
-                    onclick="sendPrivateMsgToPeer('${myPeerId}','${from}')"
+                    onclick="sendPrivateMsgToPeer('${myPeerId}','${getFrom}')"
                 ></button>`;
     }
     msgHTML += `
@@ -5434,7 +5451,7 @@ function searchPeer() {
     let msgerPeerInputarea = getEcN('msger-peer-inputarea');
     searchPeerBarName = searchPeerBarName.toLowerCase();
     for (let i = 0; i < msgerPeerInputarea.length; i++) {
-        if (!msgerPeerInputarea[i].innerHTML.toLowerCase().includes(searchPeerBarName)) {
+        if (!msgerPeerInputarea[i].innerText.toLowerCase().includes(searchPeerBarName)) {
             msgerPeerInputarea[i].style.display = 'none';
         } else {
             msgerPeerInputarea[i].style.display = 'flex';
@@ -5484,7 +5501,8 @@ function addMsgerPrivateBtn(msgerPrivateBtn, msgerPrivateMsgInput, peerId) {
     };
 
     function sendPrivateMessage() {
-        const pMsg = checkMsg(msgerPrivateMsgInput.value.trim());
+        msgerPrivateMsgInput.value = filterXSS(msgerPrivateMsgInput.value.trim());
+        const pMsg = checkMsg(msgerPrivateMsgInput.value);
         if (!pMsg) {
             msgerPrivateMsgInput.value = '';
             isChatPasteTxt = false;
@@ -5510,42 +5528,43 @@ function addMsgerPrivateBtn(msgerPrivateBtn, msgerPrivateMsgInput, peerId) {
 
 /**
  * Check Message
- * Detect url from text and make it clickable
- * If url is a img to create preview of it
- * Prevent XSS (strip html part)
- * @param {string} text passed text
+ * @param {string} txt passed text
  * @returns {string} html format
  */
-function checkMsg(text) {
+function checkMsg(txt) {
+    const text = filterXSS(txt);
     if (text.trim().length == 0) return;
     if (isHtml(text)) return sanitizeHtml(text);
     if (isValidHttpURL(text)) {
-        if (isImageURL(text)) return '<img src="' + text + '" alt="img" width="180" height="auto"/>';
-        if (isVideoTypeSupported(text)) return getIframe(text);
-        return '<a href="' + text + '" target="_blank" class="msg-a">' + text + '</a>';
+        if (isImageURL(text)) return getImage(text);
+        //if (isVideoTypeSupported(text)) return getIframe(text);
+        return getLink(text);
     }
     if (isChatMarkdownOn) return marked.parse(text);
-    let pre = '<pre>' + text + '</pre>';
-    if (isChatPasteTxt) {
+    if (isChatPasteTxt && getLineBreaks(text) > 1) {
         isChatPasteTxt = false;
-        return pre;
+        return getPre(text);
     }
-    if (getLineBreaks(text) > 1) {
-        return pre;
-    }
+    if (getLineBreaks(text) > 1) return getPre(text);
+    console.log('CheckMsg', text);
     return text;
 }
 
 /**
  * Sanitize Html
- * @param {string} html code
+ * @param {string} input code
  * @returns Html as string
  */
-function sanitizeHtml(str) {
-    const tagsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
-    const replaceTag = (tag) => tagsToReplace[tag] || tag;
-    const safe_tags_replace = (str) => str.replace(/[&<>]/g, replaceTag);
-    return safe_tags_replace(str);
+function sanitizeHtml(input) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+        '/': '&#x2F;',
+    };
+    return input.replace(/[&<>"'/]/g, (m) => map[m]);
 }
 
 /**
@@ -5567,14 +5586,17 @@ function isHtml(str) {
  * @param {string} str to check
  * @returns boolean true/false
  */
-function isValidHttpURL(str) {
-    let url;
-    try {
-        url = new URL(str);
-    } catch (_) {
-        return false;
-    }
-    return url.protocol === 'http:' || url.protocol === 'https:';
+function isValidHttpURL(url) {
+    const pattern = new RegExp(
+        '^(https?:\\/\\/)?' + // protocol
+            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+            '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+            '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+            '(\\#[-a-z\\d_]*)?$',
+        'i',
+    ); // fragment locator
+    return pattern.test(url);
 }
 
 /**
@@ -5587,22 +5609,78 @@ function isImageURL(url) {
 }
 
 /**
+ * Get image
+ * @param {string} text
+ * @returns img
+ */
+function getImage(text) {
+    const url = filterXSS(text);
+    const div = document.createElement('div');
+    const img = document.createElement('img');
+    img.setAttribute('src', url);
+    img.setAttribute('width', '200px');
+    img.setAttribute('height', 'auto');
+    div.appendChild(img);
+    console.log('GetImg', div.firstChild.outerHTML);
+    return div.firstChild.outerHTML;
+}
+
+/**
+ * Get Link
+ * @param {string} text
+ * @returns a href
+ */
+function getLink(text) {
+    const url = filterXSS(text);
+    const a = document.createElement('a');
+    const div = document.createElement('div');
+    const linkText = document.createTextNode(url);
+    a.setAttribute('href', url);
+    a.setAttribute('target', '_blank');
+    a.appendChild(linkText);
+    div.appendChild(a);
+    console.log('GetLink', div.firstChild.outerHTML);
+    return div.firstChild.outerHTML;
+}
+
+/**
+ * Get pre
+ * @param {string} txt
+ * @returns pre
+ */
+function getPre(txt) {
+    const text = filterXSS(txt);
+    const pre = document.createElement('pre');
+    const div = document.createElement('div');
+    pre.textContent = text;
+    div.appendChild(pre);
+    console.log('GetPre', div.firstChild.outerHTML);
+    return div.firstChild.outerHTML;
+}
+
+/**
  * Get IFrame from URL
- * @param {string} url
+ * @param {string} text
  * @returns html iframe
  */
-function getIframe(url) {
-    let is_youtube = getVideoType(url) == 'na' ? true : false;
-    let video_audio_url = is_youtube ? getYoutubeEmbed(url) : url;
-    return `
-    <iframe
-        title="Chat-IFrame"
-        src="${video_audio_url}"
-        width="auto"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-    ></iframe>`;
+function getIframe(text) {
+    const url = filterXSS(text);
+    const iframe = document.createElement('iframe');
+    const div = document.createElement('div');
+    const is_youtube = getVideoType(url) == 'na' ? true : false;
+    const video_audio_url = is_youtube ? getYoutubeEmbed(url) : url;
+    iframe.setAttribute('title', 'Chat-IFrame');
+    iframe.setAttribute('src', video_audio_url);
+    iframe.setAttribute('width', 'auto');
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute(
+        'allow',
+        'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+    );
+    iframe.setAttribute('allowfullscreen', 'allowfullscreen');
+    div.appendChild(iframe);
+    console.log('GetIFrame', div.firstChild.outerHTML);
+    return div.firstChild.outerHTML;
 }
 
 /**
@@ -5645,13 +5723,20 @@ function getFormatDate(date) {
 function emitMsg(from, to, msg, privateMsg, id) {
     if (!msg) return;
 
+    // sanitize all params
+    const getFrom = filterXSS(from);
+    const getTo = filterXSS(to);
+    const getMsg = filterXSS(msg);
+    const getPrivateMsg = filterXSS(privateMsg);
+    const getId = filterXSS(id);
+
     let chatMessage = {
         type: 'chat',
-        from: from,
-        id: id,
-        to: to,
-        msg: msg,
-        privateMsg: privateMsg,
+        from: getFrom,
+        id: getId,
+        to: getTo,
+        msg: getMsg,
+        privateMsg: getPrivateMsg,
     };
     console.log('Send msg', chatMessage);
     sendToDataChannel(chatMessage);
@@ -5804,7 +5889,7 @@ async function updateMyPeerName() {
     const myOldPeerName = myPeerName;
 
     myPeerName = myNewPeerName;
-    myVideoParagraph.innerHTML = myPeerName + ' (me)';
+    myVideoParagraph.innerText = myPeerName + ' (me)';
 
     sendToServer('peerName', {
         room_id: roomId,
@@ -5829,7 +5914,7 @@ async function updateMyPeerName() {
 function handlePeerName(config) {
     const { peer_id, peer_name } = config;
     const videoName = getId(peer_id + '_name');
-    if (videoName) videoName.innerHTML = peer_name;
+    if (videoName) videoName.innerText = peer_name;
     // change also avatar and btn value - name on chat lists....
     const msgerPeerName = getId(peer_id + '_pMsgBtn');
     const msgerPeerAvatar = getId(peer_id + '_pMsgAvatar');
@@ -5848,6 +5933,7 @@ async function emitPeerStatus(element, status) {
     sendToServer('peerStatus', {
         room_id: roomId,
         peer_name: myPeerName,
+        peer_id: myPeerId,
         element: element,
         status: status,
     });
@@ -6051,6 +6137,7 @@ function sendPrivateMsgToPeer(toPeerId, toPeerName) {
         },
     }).then((result) => {
         if (result.value) {
+            result.value = filterXSS(result.value);
             let pMsg = checkMsg(result.value);
             if (!pMsg) {
                 isChatPasteTxt = false;
@@ -6118,6 +6205,7 @@ async function emitPeersAction(peerAction) {
         room_id: roomId,
         peer_name: myPeerName,
         peer_id: myPeerId,
+        peer_uuid: myPeerUUID,
         peer_use_video: useVideo,
         peer_action: peerAction,
         send_to_all: true,
@@ -6395,7 +6483,9 @@ function handleRoomAction(config, emit = false) {
     if (emit) {
         const thisConfig = {
             room_id: roomId,
+            peer_id: myPeerId,
             peer_name: myPeerName,
+            peer_uuid: myPeerUUID,
             action: action,
             password: null,
         };
@@ -7066,7 +7156,7 @@ function handleDataChannelFileSharing(data) {
     receiveBuffer.push(data);
     receivedSize += data.byteLength;
     receiveProgress.value = receivedSize;
-    receiveFilePercentage.innerHTML =
+    receiveFilePercentage.innerText =
         'Receive progress: ' + ((receivedSize / incomingFileInfo.file.fileSize) * 100).toFixed(2) + '%';
     if (receivedSize === incomingFileInfo.file.fileSize) {
         receiveFileDiv.style.display = 'none';
@@ -7089,16 +7179,16 @@ function sendFileData(peer_id, broadcast) {
 
     sendInProgress = true;
 
-    sendFileInfo.innerHTML =
+    sendFileInfo.innerText =
         'File name: ' +
         fileToSend.name +
-        '<br>' +
+        '\n' +
         'File type: ' +
         fileToSend.type +
-        '<br>' +
+        '\n' +
         'File size: ' +
         bytesToSize(fileToSend.size) +
-        '<br>';
+        '\n';
 
     sendFileDiv.style.display = 'inline';
     sendProgress.max = fileToSend.size;
@@ -7120,7 +7210,7 @@ function sendFileData(peer_id, broadcast) {
         offset += data.fileData.byteLength;
 
         sendProgress.value = offset;
-        sendFilePercentage.innerHTML = 'Send progress: ' + ((offset / fileToSend.size) * 100).toFixed(2) + '%';
+        sendFilePercentage.innerText = 'Send progress: ' + ((offset / fileToSend.size) * 100).toFixed(2) + '%';
 
         // send file completed
         if (offset === fileToSend.size) {
@@ -7319,13 +7409,13 @@ function handleFileInfo(config) {
     let fileToReceiveInfo =
         'From: ' +
         incomingFileInfo.peer_name +
-        '<br />' +
+        '\n' +
         ' Incoming file: ' +
         incomingFileInfo.file.fileName +
-        '<br />' +
+        '\n' +
         ' File size: ' +
         bytesToSize(incomingFileInfo.file.fileSize) +
-        '<br />' +
+        '\n' +
         ' File type: ' +
         incomingFileInfo.file.fileType;
     console.log(fileToReceiveInfo);
@@ -7346,7 +7436,7 @@ function handleFileInfo(config) {
         !incomingFileInfo.broadcast,
         incomingFileInfo.peer_id,
     );
-    receiveFileInfo.innerHTML = fileToReceiveInfo;
+    receiveFileInfo.innerText = fileToReceiveInfo;
     receiveFileDiv.style.display = 'inline';
     receiveProgress.max = incomingFileInfo.file.fileSize;
     receiveInProgress = true;
@@ -7462,6 +7552,7 @@ function sendVideoUrl(peer_id = null) {
         },
     }).then((result) => {
         if (result.value) {
+            result.value = filterXSS(result.value);
             if (!thereIsPeerConnections()) {
                 return userLog('info', 'No participants detected');
             }
@@ -7631,7 +7722,7 @@ function handlePeerKickOutBtn(peer_id) {
  * @param {string} peer_id socket.id
  */
 function kickOut(peer_id) {
-    let pName = getId(peer_id + '_name').innerHTML;
+    let pName = getId(peer_id + '_name').innerText;
 
     Swal.fire({
         background: swalBackground,
@@ -7654,6 +7745,7 @@ function kickOut(peer_id) {
             sendToServer('kickOut', {
                 room_id: roomId,
                 peer_id: peer_id,
+                peer_uuid: myPeerUUID,
                 peer_name: myPeerName,
             });
         }
@@ -7665,6 +7757,8 @@ function kickOut(peer_id) {
  * @param {object} config data
  */
 function handleKickedOut(config) {
+    signalingSocket.disconnect();
+
     const { peer_name } = config;
 
     playSound('eject');
@@ -7682,7 +7776,7 @@ function handleKickedOut(config) {
             `User ` +
             peer_name +
             `</h2> will kick out you after <b style="color: #FF2D00;"></b> milliseconds.`,
-        timer: 10000,
+        timer: 5000,
         timerProgressBar: true,
         didOpen: () => {
             Swal.showLoading();
@@ -7724,11 +7818,11 @@ function showAbout() {
         html: `
         <br/>
         <div id="about">
-            <b><a href="https://github.com/miroslavpejic85/mirotalk" class="umami--click--github" target="_blank">Open Source</a></b> project
+            <b><a id="github-button" data-umami-event="GitHub button" href="https://github.com/miroslavpejic85/mirotalk" target="_blank">Open Source</a></b> project
             <br/><br/>
-            <button class="pulsate umami--click--sponsor" onclick="window.open('https://github.com/sponsors/miroslavpejic85?o=esb')"><i class="${className.heart}" ></i>&nbsp;Support</button>
+            <button id="sponsor-button" data-umami-event="Sponsor button" class="pulsate" onclick="window.open('https://github.com/sponsors/miroslavpejic85?o=esb')"><i class="${className.heart}" ></i>&nbsp;Support</button>
             <br /><br />
-            Author:<a href="https://www.linkedin.com/in/miroslav-pejic-976a07101/" class="umami--click--linkedin" target="_blank"> Miroslav Pejic</a>
+            Author:<a id="linkedin-button" data-umami-event="Linkedin button" href="https://www.linkedin.com/in/miroslav-pejic-976a07101/" target="_blank"> Miroslav Pejic</a>
         </div>
         `,
         showClass: {
