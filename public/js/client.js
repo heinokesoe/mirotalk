@@ -1794,6 +1794,8 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#393939, #000000)');
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#393939, #000000)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#393939, #000000)');
+            document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--tab-btn-active', 'rgb(30 29 29)');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--left-msg-bg', '#252d31');
             document.documentElement.style.setProperty('--right-msg-bg', '#056162');
@@ -1809,6 +1811,8 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--body-bg', 'radial-gradient(#666, #333)');
             document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#666, #333)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#797979, #000)');
+            document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--tab-btn-active', 'rgb(30 29 29)');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
             document.documentElement.style.setProperty('--left-msg-bg', '#252d31');
@@ -1825,6 +1829,8 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--body-bg', 'radial-gradient(#003934, #001E1A)');
             document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#003934, #001E1A)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#003934, #001E1A)');
+            document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--tab-btn-active', '#003934');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
             document.documentElement.style.setProperty('--left-msg-bg', '#003934');
@@ -1834,6 +1840,42 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--btn-bar-color', '#000000');
             document.body.style.background = 'radial-gradient(#003934, #001E1A)';
             mirotalkTheme.selectedIndex = 2;
+            break;
+        case 'blue':
+            // blue theme
+            swalBackground = 'radial-gradient(#306bac, #141B41)';
+            document.documentElement.style.setProperty('--body-bg', 'radial-gradient(#306bac, #141B41)');
+            document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#306bac, #141B41)');
+            document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#306bac, #141B41)');
+            document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--tab-btn-active', '#306bac');
+            document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
+            document.documentElement.style.setProperty('--left-msg-bg', '#306bac');
+            document.documentElement.style.setProperty('--right-msg-bg', '#141B41');
+            document.documentElement.style.setProperty('--private-msg-bg', '#6b1226');
+            document.documentElement.style.setProperty('--btn-bar-bg-color', '#FFFFFF');
+            document.documentElement.style.setProperty('--btn-bar-color', '#000000');
+            document.body.style.background = 'radial-gradient(#306bac, #141B41)';
+            mirotalkTheme.selectedIndex = 3;
+            break;
+        case 'red':
+            // red theme
+            swalBackground = 'radial-gradient(#69140E, #3C1518)';
+            document.documentElement.style.setProperty('--body-bg', 'radial-gradient(#69140E, #3C1518)');
+            document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#69140E, #3C1518)');
+            document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#69140E, #3C1518)');
+            document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--tab-btn-active', '#69140E');
+            document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
+            document.documentElement.style.setProperty('--left-msg-bg', '#69140E');
+            document.documentElement.style.setProperty('--right-msg-bg', '#3C1518');
+            document.documentElement.style.setProperty('--private-msg-bg', '#6b1226');
+            document.documentElement.style.setProperty('--btn-bar-bg-color', '#FFFFFF');
+            document.documentElement.style.setProperty('--btn-bar-color', '#000000');
+            document.body.style.background = 'radial-gradient(#69140E, #3C1518)';
+            mirotalkTheme.selectedIndex = 4;
             break;
         // ...
         default:
@@ -3388,7 +3430,7 @@ function setChatRoomBtn() {
             document.documentElement.style.setProperty('--msger-bg', 'rgba(0, 0, 0, 0.100)');
         } else {
             e.target.className = className.ghost;
-            document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#393939, #000000)');
+            setTheme(lsSettings.theme);
         }
     });
 
@@ -3690,8 +3732,8 @@ function setMyWhiteboardBtn() {
     });
     whiteboardGhostButton.addEventListener('click', (e) => {
         wbIsBgTransparent = !wbIsBgTransparent;
-        setWhiteboardBgColor(wbIsBgTransparent ? 'rgba(0, 0, 0, 0.100)' : wbBackgroundColorEl.value);
-        //wbIsBgTransparent ? wbCanvasBackgroundColor('rgba(0, 0, 0, 0.100)'): setTheme(lsSettings.theme);
+        //setWhiteboardBgColor(wbIsBgTransparent ? 'rgba(0, 0, 0, 0.100)' : wbBackgroundColorEl.value);
+        wbIsBgTransparent ? wbCanvasBackgroundColor('rgba(0, 0, 0, 0.100)') : setTheme(lsSettings.theme);
     });
 }
 
@@ -4592,6 +4634,7 @@ async function setMyVideoStatusTrue() {
     myVideoStatusIcon.className = className.videoOn;
     myVideoAvatarImage.style.display = 'none';
     emitPeerStatus('video', myVideoStatus);
+    myVideo.style.display = 'block';
     setTippy(videoBtn, 'Stop the video', 'right-start');
     setTippy(initVideoBtn, 'Stop the video', 'top');
 }
@@ -6037,6 +6080,7 @@ function setMyVideoStatus(status) {
         if (myVideoStatusIcon) setTippy(myVideoStatusIcon, status ? 'My video is on' : 'My video is off', 'bottom');
         setTippy(videoBtn, status ? 'Stop the video' : 'Start the video', 'right-start');
     }
+    myVideo.style.display = status ? 'block' : 'none';
     status ? playSound('on') : playSound('off');
     console.log('My video status', status);
 }
@@ -6219,8 +6263,10 @@ function handlePeerVideoAudioUrl(peer_id) {
  * @param {boolean} status of peer video
  */
 function setPeerVideoStatus(peer_id, status) {
+    let peerVideoPlayer = getId(peer_id + '_video');
     let peerVideoAvatarImage = getId(peer_id + '_avatar');
     let peerVideoStatus = getId(peer_id + '_videoStatus');
+    if (peerVideoPlayer) peerVideoPlayer.style.display = status ? 'block' : 'none';
     if (peerVideoAvatarImage) peerVideoAvatarImage.style.display = status ? 'none' : 'block';
     if (peerVideoStatus) {
         peerVideoStatus.className = status ? className.videoOn : className.videoOff;
