@@ -289,6 +289,7 @@ let localMediaStream; // my microphone / webcam
 let remoteMediaStream; // peers microphone / webcam
 let recScreenStream; // recorded screen stream
 let remoteMediaControls = false; // enable - disable peers video player controls (default false)
+let isPeerReconnected = false;
 let peerConnection = null; // RTCPeerConnection
 let peerConnections = {}; // keep track of our peer connections, indexed by peer_id == socket.io id
 let chatDataChannels = {}; // keep track of our peer chat data channels
@@ -1019,7 +1020,7 @@ function handleServerInfo(config) {
     }
 
     // Let start with some basic rules
-    isPresenter = is_presenter;
+    isPresenter = isPeerReconnected ? isPresenter : is_presenter;
     if (isRulesActive) {
         handleRules(isPresenter);
     }
@@ -1068,7 +1069,7 @@ function roomIsBusy() {
  * @param {boolean} isPresenter true/false
  */
 function handleRules(isPresenter) {
-    console.log('14. Peer isPresenter: ' + isPresenter);
+    console.log('14. Peer isPresenter: ' + isPresenter + ' Reconnected to signaling server: ' + isPeerReconnected);
     if (!isPresenter) {
         buttons.settings.showTabRoomParticipants = false;
         buttons.settings.showTabRoomSecurity = false;
@@ -1737,6 +1738,8 @@ function handleDisconnect(reason) {
     fileDataChannels = {};
     peerConnections = {};
     peerMediaElements = {};
+
+    isPeerReconnected = true;
 }
 
 /**
@@ -1768,12 +1771,6 @@ function handleRemovePeer(config) {
     delete peerMediaElements[peer_id];
     delete allPeers[peer_id];
 
-    isPresenter = !thereIsPeerConnections();
-    if (isRulesActive && isPresenter) {
-        console.log('I am alone in the room, got Presenter Rules');
-        handleRules(isPresenter);
-    }
-
     playSound('removePeer');
 
     console.log('ALL PEERS', allPeers);
@@ -1795,6 +1792,7 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#393939, #000000)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#393939, #000000)');
             document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--select-bg', '#2c2c2c');
             document.documentElement.style.setProperty('--tab-btn-active', 'rgb(30 29 29)');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--left-msg-bg', '#252d31');
@@ -1812,6 +1810,7 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#666, #333)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#797979, #000)');
             document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--select-bg', '#2c2c2c');
             document.documentElement.style.setProperty('--tab-btn-active', 'rgb(30 29 29)');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
@@ -1830,6 +1829,7 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#003934, #001E1A)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#003934, #001E1A)');
             document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--select-bg', '#001E1A');
             document.documentElement.style.setProperty('--tab-btn-active', '#003934');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
@@ -1848,6 +1848,7 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#306bac, #141B41)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#306bac, #141B41)');
             document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--select-bg', '#141B41');
             document.documentElement.style.setProperty('--tab-btn-active', '#306bac');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
@@ -1866,6 +1867,7 @@ function setTheme(theme) {
             document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#69140E, #3C1518)');
             document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#69140E, #3C1518)');
             document.documentElement.style.setProperty('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+            document.documentElement.style.setProperty('--select-bg', '#3C1518');
             document.documentElement.style.setProperty('--tab-btn-active', '#69140E');
             document.documentElement.style.setProperty('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
             document.documentElement.style.setProperty('--msger-private-bg', 'radial-gradient(#666, #333)');
@@ -3587,7 +3589,7 @@ function setCaptionRoomBtn() {
                 document.documentElement.style.setProperty('--msger-bg', 'rgba(0, 0, 0, 0.100)');
             } else {
                 e.target.className = className.ghost;
-                document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#393939, #000000)');
+                setTheme(lsSettings.theme);
             }
         });
 
