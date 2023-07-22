@@ -176,6 +176,7 @@ if (sentryEnabled) {
 let chatGPT;
 const configChatGPT = {
     enabled: getEnvBoolean(process.env.CHATGPT_ENABLED),
+    basePath: process.env.CHATGPT_BASE_PATH,
     apiKey: process.env.CHATGTP_APIKEY,
     model: process.env.CHATGTP_MODEL,
     max_tokens: parseInt(process.env.CHATGPT_MAX_TOKENS),
@@ -185,6 +186,7 @@ if (configChatGPT.enabled) {
     if (configChatGPT.apiKey) {
         const { Configuration, OpenAIApi } = require('openai');
         const configuration = new Configuration({
+            basePath: configChatGPT.basePath,
             apiKey: configChatGPT.apiKey,
         });
         chatGPT = new OpenAIApi(configuration);
@@ -333,7 +335,6 @@ app.get('/join/', (req, res) => {
             http://localhost:3000/join?room=test&name=mirotalk&audio=1&video=1&screen=1&notify=1
             https://p2p.mirotalk.com/join?room=test&name=mirotalk&audio=1&video=1&screen=1&notify=1
             https://mirotalk.up.railway.app/join?room=test&name=mirotalk&audio=1&video=1&screen=1&notify=1
-            https://mirotalk.herokuapp.com/join?room=test&name=mirotalk&audio=1&video=1&screen=1&notify=1
         */
         const { room, name, audio, video, screen, notify } = checkXSS(req.query);
         // all the params are mandatory for the direct room join
