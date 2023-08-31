@@ -23,6 +23,8 @@
 
 // https://www.w3schools.com/js/js_strict.asp
 
+let myRoomId; // this room id
+
 const signalingServer = getSignalingServer();
 const roomId = getRoomId();
 const welcomeImg = '../images/image-placeholder.png';
@@ -370,8 +372,10 @@ let msgerEmojiPicker;
 // my settings
 let mySettings;
 let mySettingsHeader;
-let tabDevicesBtn;
-let tabBandwidthBtn;
+let tabVideoBtn;
+let tabAudioBtn;
+let tabParticipantsBtn;
+let tabProfileBtn;
 let tabRoomBtn;
 let tabStylingBtn;
 let tabLanguagesBtn;
@@ -384,6 +388,7 @@ let switchAudioPitchBar;
 let audioInputSelect;
 let audioOutputSelect;
 let audioOutputDiv;
+let speakerTestBtn;
 let videoSelect;
 let videoQualitySelect;
 let videoFpsSelect;
@@ -560,8 +565,10 @@ function getHtmlElementsById() {
     // my settings
     mySettings = getId('mySettings');
     mySettingsHeader = getId('mySettingsHeader');
-    tabDevicesBtn = getId('tabDevicesBtn');
-    tabBandwidthBtn = getId('tabBandwidthBtn');
+    tabVideoBtn = getId('tabVideoBtn');
+    tabAudioBtn = getId('tabAudioBtn');
+    tabParticipantsBtn = getId('tabParticipantsBtn');
+    tabProfileBtn = getId('tabProfileBtn');
     tabRoomBtn = getId('tabRoomBtn');
     tabStylingBtn = getId('tabStylingBtn');
     tabLanguagesBtn = getId('tabLanguagesBtn');
@@ -574,6 +581,7 @@ function getHtmlElementsById() {
     audioInputSelect = getId('audioSource');
     audioOutputSelect = getId('audioOutput');
     audioOutputDiv = getId('audioOutputDiv');
+    speakerTestBtn = getId('speakerTestBtn');
     videoSelect = getId('videoSource');
     videoQualitySelect = getId('videoQuality');
     videoFpsSelect = getId('videoFps');
@@ -702,6 +710,7 @@ function setButtonsToolTip() {
     // settings
     setTippy(mySettingsCloseBtn, 'Close', 'right');
     setTippy(myPeerNameSetBtn, 'Change name', 'top');
+    setTippy(myRoomId, 'Room name', 'right');
     setTippy(
         switchPushToTalk,
         'If Active, When SpaceBar keydown the microphone will be activated, on keyup will be deactivated, like a walkie-talkie.',
@@ -709,8 +718,10 @@ function setButtonsToolTip() {
     );
     setTippy(switchSounds, 'Toggle room notify sounds', 'right');
     // tab btns
-    setTippy(tabDevicesBtn, 'Devices', 'top');
-    setTippy(tabBandwidthBtn, 'Bandwidth', 'top');
+    setTippy(tabVideoBtn, 'Video devices', 'top');
+    setTippy(tabAudioBtn, 'Audio devices', 'top');
+    setTippy(tabParticipantsBtn, 'Participants', 'top');
+    setTippy(tabProfileBtn, 'Profile', 'top');
     setTippy(tabRoomBtn, 'Room', 'top');
     setTippy(tabStylingBtn, 'Styling', 'top');
     setTippy(tabLanguagesBtn, 'Languages', 'top');
@@ -809,6 +820,8 @@ function getRoomId() {
         window.history.pushState({ url: newUrl }, roomId, newUrl);
     }
     console.log('Direct join', { room: roomId });
+    myRoomId = getId('myRoomId');
+    if (myRoomId) myRoomId.innerText = roomId;
     return roomId;
 }
 
@@ -2185,7 +2198,7 @@ async function setupLocalMedia() {
         if (stream) {
             await loadLocalMedia(stream);
             if (useAudio) {
-                await startPitchDetection(stream);
+                await getMicrophoneVolumeIndicator(stream);
             }
         }
     } catch (err) {
@@ -2758,6 +2771,8 @@ function logStreamSettingsInfo(name, stream) {
  */
 function adaptAspectRatio() {
     let participantsCount = getId('videoMediaContainer').childElementCount;
+    const peersCount = getId('peersCount');
+    if (peersCount) peersCount.innerText = participantsCount;
     let desktop,
         mobile = 1;
     // desktop aspect ratio
@@ -3665,6 +3680,8 @@ function setChatRoomBtn() {
         } else {
             msgPopup('info', "Chat not will be shown, when I'm receive a new message", 'top-end', 3000);
         }
+        lsSettings.show_chat_on_msg = showChatOnMessage;
+        lS.setSettings(lsSettings);
     });
 
     // chat send msg
@@ -3898,6 +3915,9 @@ function setMySettingsBtn() {
     mySettingsCloseBtn.addEventListener('click', (e) => {
         hideShowMySettings();
     });
+    speakerTestBtn.addEventListener('click', (e) => {
+        playSound('ring', true);
+    });
     myPeerNameSetBtn.addEventListener('click', (e) => {
         updateMyPeerName();
     });
@@ -3973,14 +3993,20 @@ function handleBodyOnMouseMove() {
  */
 function setupMySettings() {
     // tab buttons
-    tabDevicesBtn.addEventListener('click', (e) => {
-        openTab(e, 'tabDevices');
-    });
-    tabBandwidthBtn.addEventListener('click', (e) => {
-        openTab(e, 'tabBandwidth');
-    });
     tabRoomBtn.addEventListener('click', (e) => {
         openTab(e, 'tabRoom');
+    });
+    tabVideoBtn.addEventListener('click', (e) => {
+        openTab(e, 'tabVideo');
+    });
+    tabAudioBtn.addEventListener('click', (e) => {
+        openTab(e, 'tabAudio');
+    });
+    tabParticipantsBtn.addEventListener('click', (e) => {
+        openTab(e, 'tabParticipants');
+    });
+    tabProfileBtn.addEventListener('click', (e) => {
+        openTab(e, 'tabProfile');
     });
     tabStylingBtn.addEventListener('click', (e) => {
         openTab(e, 'tabStyling');
@@ -4017,17 +4043,17 @@ function setupMySettings() {
         videoFpsSelect.addEventListener('change', (e) => {
             videoMaxFrameRate = parseInt(videoFpsSelect.value);
             setLocalMaxFps(videoMaxFrameRate);
+            lsSettings.video_fps = e.currentTarget.selectedIndex;
+            lS.setSettings(lsSettings);
         });
-        // default 30 fps
-        videoFpsSelect.selectedIndex = '1';
     }
     // select screen fps
     screenFpsSelect.addEventListener('change', (e) => {
         screenMaxFrameRate = parseInt(screenFpsSelect.value);
         if (isScreenStreaming) setLocalMaxFps(screenMaxFrameRate);
+        lsSettings.screen_fps = e.currentTarget.selectedIndex;
+        lS.setSettings(lsSettings);
     });
-    // default 30 fps
-    screenFpsSelect.selectedIndex = '1';
 
     // Mobile not support screen sharing
     if (isMobileDevice) {
@@ -4090,6 +4116,10 @@ function setupMySettings() {
  * Load settings from local storage
  */
 function loadSettingsFromLocalStorage() {
+    showChatOnMessage = lsSettings.show_chat_on_msg;
+    msgerShowChatOnMsg.checked = showChatOnMessage;
+    screenFpsSelect.selectedIndex = lsSettings.screen_fps;
+    videoFpsSelect.selectedIndex = lsSettings.video_fps;
     notifyBySound = lsSettings.sounds;
     isAudioPitchBar = lsSettings.pitch_bar;
     switchSounds.checked = notifyBySound;
@@ -4926,7 +4956,7 @@ async function refreshMyLocalStream(stream, localAudioTrackChange = false) {
     logStreamSettingsInfo('refreshMyLocalStream', localMediaStream);
 
     // start capture mic volumes
-    startPitchDetection(localMediaStream);
+    getMicrophoneVolumeIndicator(localMediaStream);
 
     // attachMediaStream is a part of the adapter.js library
     attachMediaStream(myVideo, localMediaStream); // newStream
@@ -8230,7 +8260,7 @@ function handlePeerVolume(data) {
     let peer_id = data.peer_id;
     let element = getId(peer_id + '_pitch_bar');
     let remoteVideoWrap = getId(peer_id + '_videoWrap');
-    let volume = data.volume + 25; //for design purpose
+    let volume = data.volume;
     if (!element) return;
     if (volume > 50) {
         element.style.backgroundColor = 'orange';
@@ -8241,7 +8271,7 @@ function handlePeerVolume(data) {
         element.style.backgroundColor = '#19bb5c';
         element.style.height = '0%';
         //remoteVideoWrap.classList.toggle('speaking');
-    }, 700);
+    }, 100);
 }
 
 /**
@@ -8251,7 +8281,7 @@ function handlePeerVolume(data) {
 function handleMyVolume(data) {
     if (!isAudioPitchBar) return;
     let element = getId('myPitchBar');
-    let volume = data.volume + 25;
+    let volume = data.volume;
     if (!element) return;
     if (volume > 50) {
         element.style.backgroundColor = 'orange';
@@ -8262,7 +8292,7 @@ function handleMyVolume(data) {
         element.style.backgroundColor = '#19bb5c';
         element.style.height = '0%';
         //myVideoWrap.classList.toggle('speaking');
-    }, 700);
+    }, 100);
 }
 
 /**
@@ -8363,9 +8393,10 @@ function msgPopup(icon, message, position, timer = 1000) {
 /**
  * https://notificationsounds.com/notification-sounds
  * @param {string} name audio to play
+ * @param {boolean} force audio
  */
-async function playSound(name) {
-    if (!notifyBySound) return;
+async function playSound(name, force = false) {
+    if (!notifyBySound && !force) return;
     let sound = '../sounds/' + name + '.mp3';
     let audioToPlay = new Audio(sound);
     try {
