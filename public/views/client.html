@@ -415,7 +415,7 @@ access to use this app.
                                 <i class="fa-solid fa-circle-play"></i>
                                 <p>Test speaker</p>
                             </button>
-                            <br /><br /><br /><br />
+                            <br /><br /><br /><br /><br />
                         </div>
                         <table id="mySettingsTable">
                             <tr id="pushToTalkDiv">
@@ -448,8 +448,11 @@ access to use this app.
                     </div>
 
                     <div id="tabProfile" class="tabcontent">
-                        <br />
                         <div id="tabRoomPeerName">
+                            <div>
+                                <img id="myProfileAvatar" />
+                            </div>
+                            <br />
                             <div class="title">
                                 <i class="fas fa-user"></i>
                                 <p>Name</p>
@@ -459,6 +462,12 @@ access to use this app.
                                 <input id="myPeerNameSet" type="text" placeholder="Change name..." maxlength="32" />
                                 <button id="myPeerNameSetBtn"><i class="fas fa-user-edit"></i>&nbsp;Change name</button>
                             </div>
+                        </div>
+                        <br />
+                        <div class="title">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <p>Presenter:</p>
+                            <p id="isPeerPresenter">true</p>
                         </div>
                     </div>
 
