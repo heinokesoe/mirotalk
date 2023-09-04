@@ -910,7 +910,6 @@ em-emoji-picker {
 
 #myProfileAvatar {
     margin-top: 10px;
-    padding: 5px;
     width: 64px;
     height: 64px;
 }
@@ -968,9 +967,6 @@ th {
     /* background-color: #2b2b2b; */
 }
 
-.width-100 {
-    width: 100px;
-}
 .width-120 {
     width: 120px;
 }
