@@ -61,16 +61,53 @@ const wbWidth = 1200;
 const wbHeight = 600;
 
 const chatInputEmoji = {
-    '<3': '\u2764\uFE0F',
-    '</3': '\uD83D\uDC94',
-    ':D': '\uD83D\uDE00',
-    ':)': '\uD83D\uDE03',
-    ';)': '\uD83D\uDE09',
-    ':(': '\uD83D\uDE12',
-    ':p': '\uD83D\uDE1B',
-    ';p': '\uD83D\uDE1C',
-    ":'(": '\uD83D\uDE22',
-    ':+1:': '\uD83D\uDC4D',
+    '<3': '❤️',
+    '</3': '💔',
+    ':D': '😀',
+    ':)': '😃',
+    ';)': '😉',
+    ':(': '😒',
+    ':p': '😛',
+    ';p': '😜',
+    ":'(": '😢',
+    ':+1:': '👍',
+    ':*': '😘',
+    ':O': '😲',
+    ':|': '😐',
+    ':*(': '😭',
+    XD: '😆',
+    ':B': '😎',
+    ':P': '😜',
+    '<(': '👎',
+    '>:(': '😡',
+    ':/': '😕',
+    ':S': '😟',
+    ':X': '🤐',
+    ';(': '😥',
+    ':T': '😖',
+    ':@': '😠',
+    ':$': '🤑',
+    ':&': '🤗',
+    ':#': '🤔',
+    ':!': '😵',
+    ':W': '😷',
+    ':%': '🤒',
+    ':*!': '🤩',
+    ':G': '😬',
+    ':R': '😋',
+    ':M': '🤮',
+    ':L': '🥴',
+    ':C': '🥺',
+    ':F': '🥳',
+    ':Z': '🤢',
+    ':^': '🤓',
+    ':K': '🤫',
+    ':D!': '🤯',
+    ':H': '🧐',
+    ':U': '🤥',
+    ':V': '🤪',
+    ':N': '🥶',
+    ':J': '🥴',
 }; // https://github.com/wooorm/gemoji/blob/main/support.md
 
 const className = {
@@ -104,6 +141,7 @@ const className = {
     captionOn: 'fas fa-closed-captioning',
     trash: 'fas fa-trash',
     copy: 'fas fa-copy',
+    speech: 'fas fa-volume-high',
     heart: 'fas fa-heart',
     pip: 'fas fa-images',
 };
@@ -279,6 +317,8 @@ let isCaptionBoxVisible = false;
 let isChatEmojiVisible = false;
 let isChatMarkdownOn = false;
 let isChatGPTOn = false;
+let isSpeechSynthesisSupported = 'speechSynthesis' in window;
+let speechInMessages = false;
 let isButtonsVisible = false;
 let isButtonsBarOver = false;
 let isMySettingsVisible = false;
@@ -352,7 +392,10 @@ let msgerShareFileBtn;
 let msgerInput;
 let msgerCleanTextBtn;
 let msgerPasteBtn;
+let msgerShowChatOnMsgDiv;
 let msgerShowChatOnMsg;
+let msgerSpeechMsgDiv;
+let msgerSpeechMsg;
 let msgerSendBtn;
 //caption section
 let captionDraggable;
@@ -547,7 +590,10 @@ function getHtmlElementsById() {
     msgerInput = getId('msgerInput');
     msgerCleanTextBtn = getId('msgerCleanTextBtn');
     msgerPasteBtn = getId('msgerPasteBtn');
+    msgerShowChatOnMsgDiv = getId('msgerShowChatOnMsgDiv');
     msgerShowChatOnMsg = getId('msgerShowChatOnMsg');
+    msgerSpeechMsgDiv = getId('msgerSpeechMsgDiv');
+    msgerSpeechMsg = getId('msgerSpeechMsg');
     msgerSendBtn = getId('msgerSendBtn');
     // chat room connected peers
     msgerCP = getId('msgerCP');
@@ -700,7 +746,8 @@ function setButtonsToolTip() {
     setTippy(msgerShareFileBtn, 'Share file', 'top');
     setTippy(msgerCleanTextBtn, 'Clean', 'top');
     setTippy(msgerPasteBtn, 'Paste', 'top');
-    setTippy(msgerShowChatOnMsg, 'Show me when I receive a new message', 'top');
+    setTippy(msgerShowChatOnMsgDiv, 'Show chat when you receive a new message', 'top');
+    setTippy(msgerSpeechMsgDiv, 'Speech the incoming messages', 'top');
     setTippy(msgerSendBtn, 'Send', 'top');
     // chat participants buttons
     setTippy(msgerCPCloseBtn, 'Close', 'left');
@@ -3702,14 +3749,27 @@ function setChatRoomBtn() {
     msgerShowChatOnMsg.addEventListener('change', (e) => {
         playSound('switch');
         showChatOnMessage = e.currentTarget.checked;
-        if (showChatOnMessage) {
-            msgPopup('info', "Chat will be shown, when I'm receive a new message", 'top-end', 3000);
-        } else {
-            msgPopup('info', "Chat not will be shown, when I'm receive a new message", 'top-end', 3000);
-        }
+        showChatOnMessage
+            ? msgPopup('info', 'Chat will be shown, when you receive a new message', 'top-end', 3000)
+            : msgPopup('info', 'Chat not will be shown, when you receive a new message', 'top-end', 3000);
         lsSettings.show_chat_on_msg = showChatOnMessage;
         lS.setSettings(lsSettings);
     });
+
+    // speech incoming message
+    if (isSpeechSynthesisSupported) {
+        msgerSpeechMsg.addEventListener('change', (e) => {
+            playSound('switch');
+            speechInMessages = e.currentTarget.checked;
+            speechInMessages
+                ? msgPopup('info', 'When I receive a new message, it will be converted into speech', 'top-end', 3000)
+                : msgPopup('info', 'You have disabled speech messages', 'top-end', 3000);
+            lsSettings.speech_in_msg = speechInMessages;
+            lS.setSettings(lsSettings);
+        });
+    } else {
+        elemDisplay(msgerSpeechMsgDiv, false);
+    }
 
     // chat send msg
     msgerSendBtn.addEventListener('click', async (e) => {
@@ -4159,7 +4219,9 @@ function setupMySettings() {
  */
 function loadSettingsFromLocalStorage() {
     showChatOnMessage = lsSettings.show_chat_on_msg;
+    speechInMessages = lsSettings.speech_in_msg;
     msgerShowChatOnMsg.checked = showChatOnMessage;
+    msgerSpeechMsg.checked = speechInMessages;
     screenFpsSelect.selectedIndex = lsSettings.screen_fps;
     videoFpsSelect.selectedIndex = lsSettings.video_fps;
     screenMaxFrameRate = getSelectedIndexValue(screenFpsSelect);
@@ -5577,9 +5639,9 @@ function handleDataChannelChat(dataMessage) {
         userLog('toast', `New message from: ${msgFrom}`);
     }
 
-    playSound('chatMessage');
     setPeerChatAvatarImgName('left', msgFrom);
     appendMessage(msgFrom, leftChatAvatar, 'left', msg, msgPrivate, msgId);
+    speechInMessages ? speechMessage(true, msgFrom, msg) : playSound('chatMessage');
 }
 
 /**
@@ -5725,17 +5787,43 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
                     class="${className.copy}" 
                     style="color:#fff; border:none; background:transparent;"
                     onclick="copyToClipboard('${chatMessagesId}')"
-                ></button>
+                ></button>`;
+    if (isSpeechSynthesisSupported) {
+        msgHTML += `
+                <button
+                    id="msg-speech-${chatMessagesId}"
+                    class="${className.speech}" 
+                    style="color:#fff; border:none; background:transparent;"
+                    onclick="speechMessage(false, '${getFrom}', '${checkMsg(getMsg)}')"
+                ></button>`;
+    }
+    msgHTML += ` 
             </div>
         </div>
-	</div>
+    </div>
     `;
     msgerChat.insertAdjacentHTML('beforeend', msgHTML);
     msgerChat.scrollTop += 500;
     setTippy(getId('msg-delete-' + chatMessagesId), 'Delete', 'top');
     setTippy(getId('msg-copy-' + chatMessagesId), 'Copy', 'top');
+    setTippy(getId('msg-speech-' + chatMessagesId), 'Speech', 'top');
     setTippy(getId('msg-private-reply-' + chatMessagesId), 'Reply', 'top');
     chatMessagesId++;
+}
+
+/**
+ * Speech message
+ * https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisUtterance
+ *
+ * @param {boolean} newMsg true/false
+ * @param {string} from peer_name
+ * @param {string} msg message
+ */
+function speechMessage(newMsg = true, from, msg) {
+    const speech = new SpeechSynthesisUtterance();
+    speech.text = (newMsg ? 'New' : '') + ' message from:' + from + '. The message is:' + msg;
+    speech.rate = 0.9;
+    window.speechSynthesis.speak(speech);
 }
 
 /**
@@ -6143,7 +6231,7 @@ async function getChatGPTmessage(msg) {
                 setPeerChatAvatarImgName('left', 'ChatGPT');
                 appendMessage('ChatGPT', leftChatAvatar, 'left', completion, true);
                 cleanMessageInput();
-                playSound('message');
+                speechInMessages ? speechMessage(true, 'ChatGPT', completion) : playSound('message');
             }.bind(this),
         )
         .catch((err) => {
