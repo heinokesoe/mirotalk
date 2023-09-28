@@ -56,6 +56,8 @@ const isWebRTCSupported = DetectRTC.isWebRTCSupported;
 const isMobileDevice = DetectRTC.isMobileDevice;
 const myBrowserName = DetectRTC.browser.name;
 
+const Base64Prefix = 'data:application/pdf;base64,';
+const wbPdfInput = 'application/pdf';
 const wbImageInput = 'image/*';
 const wbWidth = 1200;
 const wbHeight = 600;
@@ -80,7 +82,6 @@ const chatInputEmoji = {
     ':P': '😜',
     '<(': '👎',
     '>:(': '😡',
-    ':/': '😕',
     ':S': '😟',
     ':X': '🤐',
     ';(': '😥',
@@ -378,6 +379,8 @@ let fileShareBtn;
 let mySettingsBtn;
 let aboutBtn;
 let leaveRoomBtn;
+let placement = 'right';
+// https://atomiks.github.io/tippyjs/#placements
 // chat room elements
 let msgerDraggable;
 let msgerHeader;
@@ -479,6 +482,7 @@ let whiteboardObjectBtn;
 let whiteboardUndoBtn;
 let whiteboardRedoBtn;
 let whiteboardImgFileBtn;
+let whiteboardPdfFileBtn;
 let whiteboardImgUrlBtn;
 let whiteboardTextBtn;
 let whiteboardLineBtn;
@@ -668,6 +672,7 @@ function getHtmlElementsById() {
     whiteboardUndoBtn = getId('whiteboardUndoBtn');
     whiteboardRedoBtn = getId('whiteboardRedoBtn');
     whiteboardImgFileBtn = getId('whiteboardImgFileBtn');
+    whiteboardPdfFileBtn = getId('whiteboardPdfFileBtn');
     whiteboardImgUrlBtn = getId('whiteboardImgUrlBtn');
     whiteboardTextBtn = getId('whiteboardTextBtn');
     whiteboardLineBtn = getId('whiteboardLineBtn');
@@ -721,51 +726,37 @@ function setButtonsToolTip() {
     // init buttons
     setTippy(initScreenShareBtn, 'Toggle screen sharing', 'top');
     // main buttons
-    setTippy(shareRoomBtn, 'Invite others to join', 'right-start');
-    setTippy(hideMeBtn, 'Toggle hide myself from the room view', 'right-start');
-    setTippy(audioBtn, 'Stop the audio', 'right-start');
-    setTippy(videoBtn, 'Stop the video', 'right-start');
-    setTippy(screenShareBtn, 'Start screen sharing', 'right-start');
-    setTippy(recordStreamBtn, 'Start recording', 'right-start');
-    setTippy(fullScreenBtn, 'View full screen', 'right-start');
-    setTippy(chatRoomBtn, 'Open the chat', 'right-start');
-    setTippy(captionBtn, 'Open the caption', 'right-start');
-    setTippy(myHandBtn, 'Raise your hand', 'right-start');
-    setTippy(whiteboardBtn, 'Open the whiteboard', 'right-start');
-    setTippy(fileShareBtn, 'Share file', 'right-start');
-    setTippy(mySettingsBtn, 'Open settings', 'right-start');
-    setTippy(aboutBtn, 'About this project', 'right-start');
-    setTippy(leaveRoomBtn, 'Leave this room', 'right-start');
+    refreshMainButtonsToolTipPlacement();
     // chat room buttons
-    setTippy(msgerTheme, 'Ghost theme', 'top');
-    setTippy(msgerCPBtn, 'Private messages', 'top');
-    setTippy(msgerClean, 'Clean the messages', 'top');
-    setTippy(msgerSaveBtn, 'Save the messages', 'top');
-    setTippy(msgerClose, 'Close', 'right');
-    setTippy(msgerMaxBtn, 'Maximize', 'right');
-    setTippy(msgerMinBtn, 'Minimize', 'right');
+    setTippy(msgerClose, 'Close', 'bottom');
+    setTippy(msgerShowChatOnMsgDiv, 'Show chat when you receive a new message', 'bottom');
+    setTippy(msgerSpeechMsgDiv, 'Speech the incoming messages', 'bottom');
+    setTippy(msgerTheme, 'Ghost theme', 'bottom');
+    setTippy(msgerClean, 'Clean the messages', 'bottom');
+    setTippy(msgerSaveBtn, 'Save the messages', 'bottom');
+    setTippy(msgerMaxBtn, 'Maximize', 'bottom');
+    setTippy(msgerMinBtn, 'Minimize', 'bottom');
     setTippy(msgerEmojiBtn, 'Emoji', 'top');
     setTippy(msgerMarkdownBtn, 'Markdown', 'top');
     setTippy(msgerGPTBtn, 'ChatGPT', 'top');
     setTippy(msgerShareFileBtn, 'Share file', 'top');
+    setTippy(msgerCPBtn, 'Private messages', 'top');
     setTippy(msgerCleanTextBtn, 'Clean', 'top');
     setTippy(msgerPasteBtn, 'Paste', 'top');
-    setTippy(msgerShowChatOnMsgDiv, 'Show chat when you receive a new message', 'top');
-    setTippy(msgerSpeechMsgDiv, 'Speech the incoming messages', 'top');
     setTippy(msgerSendBtn, 'Send', 'top');
     // chat participants buttons
-    setTippy(msgerCPCloseBtn, 'Close', 'left');
+    setTippy(msgerCPCloseBtn, 'Close', 'bottom');
     // caption buttons
-    setTippy(captionClose, 'Close', 'right');
-    setTippy(captionMaxBtn, 'Maximize', 'right');
-    setTippy(captionMinBtn, 'Minimize', 'right');
-    setTippy(captionTheme, 'Ghost theme', 'top');
-    setTippy(captionClean, 'Clean the messages', 'top');
-    setTippy(captionSaveBtn, 'Save the messages', 'top');
+    setTippy(captionClose, 'Close', 'bottom');
+    setTippy(captionMaxBtn, 'Maximize', 'bottom');
+    setTippy(captionMinBtn, 'Minimize', 'bottom');
+    setTippy(captionTheme, 'Ghost theme', 'bottom');
+    setTippy(captionClean, 'Clean the messages', 'bottom');
+    setTippy(captionSaveBtn, 'Save the messages', 'bottom');
     setTippy(speechRecognitionStart, 'Start', 'top');
     setTippy(speechRecognitionStop, 'Stop', 'top');
     // settings
-    setTippy(mySettingsCloseBtn, 'Close', 'right');
+    setTippy(mySettingsCloseBtn, 'Close', 'bottom');
     setTippy(myPeerNameSetBtn, 'Change name', 'top');
     setTippy(myRoomId, 'Room name (click to copy/share)', 'right');
     setTippy(
@@ -775,15 +766,15 @@ function setButtonsToolTip() {
     );
     setTippy(switchSounds, 'Toggle room notify sounds', 'right');
     setTippy(switchShare, "Show 'Share Room' popup on join.", 'right');
-    // tab btns
-    setTippy(tabVideoBtn, 'Video devices', 'top');
-    setTippy(tabAudioBtn, 'Audio devices', 'top');
-    setTippy(tabParticipantsBtn, 'Participants', 'top');
-    setTippy(tabProfileBtn, 'Profile', 'top');
-    setTippy(tabRoomBtn, 'Room', 'top');
-    setTippy(tabStylingBtn, 'Styling', 'top');
-    setTippy(tabLanguagesBtn, 'Languages', 'top');
-    // whiteboard btns
+    // tab buttons
+    // setTippy(tabVideoBtn, 'Video devices', 'top');
+    // setTippy(tabAudioBtn, 'Audio devices', 'top');
+    // setTippy(tabParticipantsBtn, 'Participants', 'top');
+    // setTippy(tabProfileBtn, 'Profile', 'top');
+    // setTippy(tabRoomBtn, 'Room', 'top');
+    // setTippy(tabStylingBtn, 'Styling', 'top');
+    // setTippy(tabLanguagesBtn, 'Languages', 'top');
+    // whiteboard buttons
     setTippy(wbDrawingColorEl, 'Drawing color', 'bottom');
     setTippy(whiteboardGhostButton, 'Toggle transparent background', 'bottom');
     setTippy(wbBackgroundColorEl, 'Background color', 'bottom');
@@ -792,6 +783,7 @@ function setButtonsToolTip() {
     setTippy(whiteboardUndoBtn, 'Undo', 'bottom');
     setTippy(whiteboardRedoBtn, 'Redo', 'bottom');
     setTippy(whiteboardImgFileBtn, 'Add image from file', 'bottom');
+    setTippy(whiteboardPdfFileBtn, 'Add pdf from file', 'bottom');
     setTippy(whiteboardImgUrlBtn, 'Add image from URL', 'bottom');
     setTippy(whiteboardTextBtn, 'Add the text', 'bottom');
     setTippy(whiteboardLineBtn, 'Add the line', 'bottom');
@@ -803,31 +795,64 @@ function setButtonsToolTip() {
     setTippy(whiteboardCleanBtn, 'Clean the board', 'bottom');
     setTippy(whiteboardLockBtn, 'If enabled, participants cannot interact', 'right');
     setTippy(whiteboardCloseBtn, 'Close', 'right');
-    // room actions btn
+    // room actions buttons
     // setTippy(muteEveryoneBtn, 'Mute everyone except yourself', 'top');
     // setTippy(hideEveryoneBtn, 'Hide everyone except yourself', 'top');
     // setTippy(ejectEveryoneBtn, 'Eject everyone except yourself', 'top');
-    // Suspend/Hide File transfer btn
+    // Suspend/Hide File transfer buttons
     setTippy(sendAbortBtn, 'Abort file transfer', 'right-start');
     setTippy(receiveHideBtn, 'Hide file transfer', 'right-start');
     // video URL player
-    setTippy(videoUrlCloseBtn, 'Close the video player', 'right-start');
-    setTippy(videoAudioCloseBtn, 'Close the video player', 'right-start');
+    setTippy(videoUrlCloseBtn, 'Close the video player', 'bottom');
+    setTippy(videoAudioCloseBtn, 'Close the video player', 'bottom');
     setTippy(msgerVideoUrlBtn, 'Share a video or audio to all participants', 'top');
 }
 
 /**
+ * Refresh main buttons tooltips based of they position (vertical/horizontal)
+ * @returns void
+ */
+function refreshMainButtonsToolTipPlacement() {
+    // not need for mobile
+    if (isMobileDevice) return;
+    // main buttons
+    placement = btnsBarSelect.options[btnsBarSelect.selectedIndex].value == 'vertical' ? 'right' : 'top';
+    setTippy(shareRoomBtn, 'Invite others to join', placement);
+    setTippy(hideMeBtn, 'Toggle hide myself from the room view', placement);
+    setTippy(audioBtn, 'Stop the audio', placement);
+    setTippy(videoBtn, 'Stop the video', placement);
+    setTippy(screenShareBtn, 'Start screen sharing', placement);
+    setTippy(recordStreamBtn, 'Start recording', placement);
+    setTippy(fullScreenBtn, 'View full screen', placement);
+    setTippy(chatRoomBtn, 'Open the chat', placement);
+    setTippy(captionBtn, 'Open the caption', placement);
+    setTippy(myHandBtn, 'Raise your hand', placement);
+    setTippy(whiteboardBtn, 'Open the whiteboard', placement);
+    setTippy(fileShareBtn, 'Share file', placement);
+    setTippy(mySettingsBtn, 'Open settings', placement);
+    setTippy(aboutBtn, 'About this project', placement);
+    setTippy(leaveRoomBtn, 'Leave this room', placement);
+}
+
+/**
  * Set nice tooltip to element
- * @param {object} elem element
+ * @param {object} element element
  * @param {string} content message to popup
  * @param {string} placement position
  */
-function setTippy(elem, content, placement) {
+function setTippy(element, content, placement) {
     if (isMobileDevice) return;
-    tippy(elem, {
-        content: content,
-        placement: placement,
-    });
+    if (element) {
+        if (element._tippy) {
+            element._tippy.destroy();
+        }
+        tippy(element, {
+            content: content,
+            placement: placement,
+        });
+    } else {
+        console.warn('setTippy element not found with content', content);
+    }
 }
 
 /**
@@ -2078,7 +2103,9 @@ function setButtonsBarPosition(position) {
             break;
         default:
             console.log('No position found');
+            break;
     }
+    refreshMainButtonsToolTipPlacement();
 }
 
 /**
@@ -2365,18 +2392,20 @@ async function loadLocalMedia(stream) {
     myVideoPinBtn.className = className.pinUnpin;
 
     // no mobile devices
-    setTippy(myCountTime, 'Session Time', 'bottom');
-    setTippy(myPeerName, 'My name', 'bottom');
-    setTippy(myHandStatusIcon, 'My hand is raised', 'bottom');
-    setTippy(myPrivacyBtn, 'Toggle video privacy', 'bottom');
-    setTippy(myVideoStatusIcon, 'My video is on', 'bottom');
-    setTippy(myAudioStatusIcon, 'My audio is on', 'bottom');
-    setTippy(myVideoToImgBtn, 'Take a snapshot', 'bottom');
-    setTippy(myVideoFullScreenBtn, 'Full screen mode', 'bottom');
-    setTippy(myVideoZoomInBtn, 'Zoom in video', 'bottom');
-    setTippy(myVideoPiPBtn, 'Toggle picture in picture');
-    setTippy(myVideoZoomOutBtn, 'Zoom out video', 'bottom');
-    setTippy(myVideoPinBtn, 'Toggle Pin video', 'bottom');
+    if (!isMobileDevice) {
+        setTippy(myCountTime, 'Session Time', 'bottom');
+        setTippy(myPeerName, 'My name', 'bottom');
+        setTippy(myHandStatusIcon, 'My hand is raised', 'bottom');
+        setTippy(myPrivacyBtn, 'Toggle video privacy', 'bottom');
+        setTippy(myVideoStatusIcon, 'My video is on', 'bottom');
+        setTippy(myAudioStatusIcon, 'My audio is on', 'bottom');
+        setTippy(myVideoToImgBtn, 'Take a snapshot', 'bottom');
+        setTippy(myVideoFullScreenBtn, 'Full screen mode', 'bottom');
+        setTippy(myVideoZoomInBtn, 'Zoom in video', 'bottom');
+        setTippy(myVideoPiPBtn, 'Toggle picture in picture', 'bottom');
+        setTippy(myVideoZoomOutBtn, 'Zoom out video', 'bottom');
+        setTippy(myVideoPinBtn, 'Toggle Pin video', 'bottom');
+    }
 
     // my video avatar image
     myVideoAvatarImage.setAttribute('id', 'myVideoAvatarImage');
@@ -2632,21 +2661,23 @@ async function loadRemoteMediaStream(stream, peers, peer_id) {
     remoteVideoPinBtn.className = className.pinUnpin;
 
     // no mobile devices
-    setTippy(remotePeerName, 'Participant name', 'bottom');
-    setTippy(remoteHandStatusIcon, 'Participant hand is raised', 'bottom');
-    setTippy(remoteVideoStatusIcon, 'Participant video is on', 'bottom');
-    setTippy(remoteAudioStatusIcon, 'Participant audio is on', 'bottom');
-    setTippy(remoteAudioVolume, '🔊 Volume', 'top-end');
-    setTippy(remoteVideoAudioUrlBtn, 'Send Video or Audio', 'bottom');
-    setTippy(remotePrivateMsgBtn, 'Send private message', 'bottom');
-    setTippy(remoteFileShareBtn, 'Send file', 'bottom');
-    setTippy(remoteVideoToImgBtn, 'Take a snapshot', 'bottom');
-    setTippy(remotePeerKickOut, 'Kick out', 'bottom');
-    setTippy(remoteVideoFullScreenBtn, 'Full screen mode', 'bottom');
-    setTippy(remoteVideoZoomInBtn, 'Zoom in video', 'bottom');
-    setTippy(remoteVideoZoomOutBtn, 'Zoom out video', 'bottom');
-    setTippy(remoteVideoPiPBtn, 'Toggle picture in picture');
-    setTippy(remoteVideoPinBtn, 'Toggle Pin video', 'bottom');
+    if (!isMobileDevice) {
+        setTippy(remotePeerName, 'Participant name', 'bottom');
+        setTippy(remoteHandStatusIcon, 'Participant hand is raised', 'bottom');
+        setTippy(remoteVideoStatusIcon, 'Participant video is on', 'bottom');
+        setTippy(remoteAudioStatusIcon, 'Participant audio is on', 'bottom');
+        setTippy(remoteAudioVolume, '🔊 Volume', 'top');
+        setTippy(remoteVideoAudioUrlBtn, 'Send Video or Audio', 'bottom');
+        setTippy(remotePrivateMsgBtn, 'Send private message', 'bottom');
+        setTippy(remoteFileShareBtn, 'Send file', 'bottom');
+        setTippy(remoteVideoToImgBtn, 'Take a snapshot', 'bottom');
+        setTippy(remotePeerKickOut, 'Kick out', 'bottom');
+        setTippy(remoteVideoFullScreenBtn, 'Full screen mode', 'bottom');
+        setTippy(remoteVideoZoomInBtn, 'Zoom in video', 'bottom');
+        setTippy(remoteVideoZoomOutBtn, 'Zoom out video', 'bottom');
+        setTippy(remoteVideoPiPBtn, 'Toggle picture in picture', 'bottom');
+        setTippy(remoteVideoPinBtn, 'Toggle Pin video', 'bottom');
+    }
 
     // my video avatar image
     remoteVideoAvatarImage.setAttribute('id', peer_id + '_avatar');
@@ -3609,7 +3640,7 @@ function setFullScreenBtn() {
             if (!fullscreenElement) {
                 fullScreenBtn.className = className.fsOff;
                 isDocumentOnFullScreen = false;
-                setTippy(fullScreenBtn, 'View full screen', 'right-start');
+                setTippy(fullScreenBtn, 'View full screen', placement);
             }
         });
         fullScreenBtn.addEventListener('click', (e) => {
@@ -3766,7 +3797,7 @@ function setChatRoomBtn() {
             playSound('switch');
             speechInMessages = e.currentTarget.checked;
             speechInMessages
-                ? msgPopup('info', 'When I receive a new message, it will be converted into speech', 'top-end', 3000)
+                ? msgPopup('info', 'When You receive a new message, it will be converted into speech', 'top-end', 3000)
                 : msgPopup('info', 'You have disabled speech messages', 'top-end', 3000);
             lsSettings.speech_in_msg = speechInMessages;
             lS.setSettings(lsSettings);
@@ -3924,6 +3955,9 @@ function setMyWhiteboardBtn() {
     });
     whiteboardImgFileBtn.addEventListener('click', (e) => {
         whiteboardAddObj('imgFile');
+    });
+    whiteboardPdfFileBtn.addEventListener('click', (e) => {
+        whiteboardAddObj('pdfFile');
     });
     whiteboardImgUrlBtn.addEventListener('click', (e) => {
         whiteboardAddObj('imgUrl');
@@ -4968,7 +5002,7 @@ function setScreenSharingStatus(status) {
     emitPeerStatus('video', status);
     initScreenShareBtn.className = status ? className.screenOff : className.screenOn;
     screenShareBtn.className = status ? className.screenOff : className.screenOn;
-    setTippy(screenShareBtn, status ? 'Stop screen sharing' : 'Start screen sharing', 'right-start');
+    setTippy(screenShareBtn, status ? 'Stop screen sharing' : 'Start screen sharing', placement);
 }
 
 /**
@@ -4985,7 +5019,7 @@ async function setMyVideoStatusTrue() {
     myVideoAvatarImage.style.display = 'none';
     emitPeerStatus('video', myVideoStatus);
     myVideo.style.display = 'block';
-    setTippy(videoBtn, 'Stop the video', 'right-start');
+    setTippy(videoBtn, 'Stop the video', placement);
     setTippy(initVideoBtn, 'Stop the video', 'top');
 }
 
@@ -5005,7 +5039,7 @@ function toggleFullScreen() {
             isDocumentOnFullScreen = false;
         }
     }
-    setTippy(fullScreenBtn, isDocumentOnFullScreen ? 'Exit full screen' : 'View full screen', 'right-start');
+    setTippy(fullScreenBtn, isDocumentOnFullScreen ? 'Exit full screen' : 'View full screen', placement);
 }
 
 /**
@@ -5297,7 +5331,7 @@ function handleMediaRecorderStart(event) {
     isStreamRecording = true;
     recordStreamBtn.style.setProperty('color', '#ff4500');
     startRecordingTime();
-    setTippy(recordStreamBtn, 'Stop recording', 'right-start');
+    setTippy(recordStreamBtn, 'Stop recording', placement);
     if (isMobileDevice) {
         swapCameraBtn.style.display = 'none';
     }
@@ -5332,7 +5366,7 @@ function handleMediaRecorderStop(event) {
     }
     recordStreamBtn.style.setProperty('color', '#000');
     downloadRecordedStream();
-    setTippy(recordStreamBtn, 'Start recording', 'right-start');
+    setTippy(recordStreamBtn, 'Start recording', placement);
     if (isMobileDevice) {
         swapCameraBtn.style.display = 'block';
     }
@@ -5419,7 +5453,7 @@ function showChatRoomDraggable() {
     msgerDraggable.style.left = isMobileDevice ? '50%' : '25%';
     msgerDraggable.style.display = 'flex';
     isChatRoomVisible = true;
-    setTippy(chatRoomBtn, 'Close the chat', 'right-start');
+    setTippy(chatRoomBtn, 'Close the chat', placement);
 }
 
 /**
@@ -5436,7 +5470,7 @@ function showCaptionDraggable() {
     captionDraggable.style.left = isMobileDevice ? '50%' : '75%';
     captionDraggable.style.display = 'flex';
     isCaptionBoxVisible = true;
-    setTippy(captionBtn, 'Close the caption', 'right-start');
+    setTippy(captionBtn, 'Close the caption', placement);
 }
 
 /**
@@ -5569,7 +5603,7 @@ function hideChatRoomAndEmojiPicker() {
     chatRoomBtn.className = className.chatOn;
     isChatRoomVisible = false;
     isChatEmojiVisible = false;
-    setTippy(chatRoomBtn, 'Open the chat', 'right-start');
+    setTippy(chatRoomBtn, 'Open the chat', placement);
 }
 
 /**
@@ -5579,7 +5613,7 @@ function hideCaptionBox() {
     captionDraggable.style.display = 'none';
     captionBtn.className = className.captionOn;
     isCaptionBoxVisible = false;
-    setTippy(captionBtn, 'Open the caption', 'right-start');
+    setTippy(captionBtn, 'Open the caption', placement);
 }
 
 /**
@@ -5808,10 +5842,12 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
     `;
     msgerChat.insertAdjacentHTML('beforeend', msgHTML);
     msgerChat.scrollTop += 500;
-    setTippy(getId('msg-delete-' + chatMessagesId), 'Delete', 'top');
-    setTippy(getId('msg-copy-' + chatMessagesId), 'Copy', 'top');
-    setTippy(getId('msg-speech-' + chatMessagesId), 'Speech', 'top');
-    setTippy(getId('msg-private-reply-' + chatMessagesId), 'Reply', 'top');
+    if (!isMobileDevice) {
+        setTippy(getId('msg-delete-' + chatMessagesId), 'Delete', 'top');
+        setTippy(getId('msg-copy-' + chatMessagesId), 'Copy', 'top');
+        setTippy(getId('msg-speech-' + chatMessagesId), 'Speech', 'top');
+        setTippy(getId('msg-private-reply-' + chatMessagesId), 'Reply', 'top');
+    }
     chatMessagesId++;
 }
 
@@ -5867,7 +5903,7 @@ function copyToClipboard(id) {
             msgPopup('success', 'Message copied!', 'top-end', 1000);
         })
         .catch((err) => {
-            msgPopup('error', err, 'top-end', 2000);
+            msgPopup('error', err, 'top', 2000);
         });
 }
 
@@ -6432,13 +6468,14 @@ function setMyHandStatus() {
     if (myHandStatus) {
         // Raise hand
         myHandStatus = false;
-        setTippy(myHandBtn, 'Raise your hand', 'right-start');
+        setTippy(myHandBtn, 'Raise your hand', placement);
     } else {
         // Lower hand
         myHandStatus = true;
-        setTippy(myHandBtn, 'Lower your hand', 'right-start');
+        setTippy(myHandBtn, 'Lower your hand', placement);
         playSound('raiseHand');
     }
+    myHandBtn.style.color = myHandStatus ? 'green' : 'black';
     myHandStatusIcon.style.display = myHandStatus ? 'inline' : 'none';
     emitPeerStatus('hand', myHandStatus);
 }
@@ -6452,7 +6489,7 @@ function setMyAudioStatus(status) {
     // send my audio status to all peers in the room
     emitPeerStatus('audio', status);
     setTippy(myAudioStatusIcon, status ? 'My audio is on' : 'My audio is off', 'bottom');
-    setTippy(audioBtn, status ? 'Stop the audio' : 'Start the audio', 'right-start');
+    setTippy(audioBtn, status ? 'Stop the audio' : 'Start the audio', placement);
     status ? playSound('on') : playSound('off');
     console.log('My audio status', status);
 }
@@ -6470,7 +6507,7 @@ function setMyVideoStatus(status) {
     emitPeerStatus('video', status);
     if (!isMobileDevice) {
         if (myVideoStatusIcon) setTippy(myVideoStatusIcon, status ? 'My video is on' : 'My video is off', 'bottom');
-        setTippy(videoBtn, status ? 'Stop the video' : 'Start the video', 'right-start');
+        setTippy(videoBtn, status ? 'Stop the video' : 'Start the video', placement);
     }
     myVideo.style.display = status ? 'block' : 'none';
     initVideo.style.display = status ? 'block' : 'none';
@@ -7259,6 +7296,40 @@ function whiteboardAddObj(type) {
                 }
             });
             break;
+        case 'pdfFile':
+            Swal.fire({
+                allowOutsideClick: false,
+                background: swalBackground,
+                position: 'center',
+                title: 'Select the PDF',
+                input: 'file',
+                inputAttributes: {
+                    accept: wbPdfInput,
+                    'aria-label': 'Select the PDF',
+                },
+                showDenyButton: true,
+                confirmButtonText: `OK`,
+                denyButtonText: `Cancel`,
+                showClass: { popup: 'animate__animated animate__fadeInDown' },
+                hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let wbCanvasPdf = result.value;
+                    if (wbCanvasPdf && wbCanvasPdf.size > 0) {
+                        let reader = new FileReader();
+                        reader.onload = async function (event) {
+                            wbCanvas.requestRenderAll();
+                            await pdfToImage(event.target.result, wbCanvas);
+                            whiteboardIsDrawingMode(false);
+                            wbCanvasToJson();
+                        };
+                        reader.readAsDataURL(wbCanvasPdf);
+                    } else {
+                        userLog('error', 'File not selected or empty', 'top-end');
+                    }
+                }
+            });
+            break;
         case 'text':
             const text = new fabric.IText('Lorem Ipsum', {
                 top: 0,
@@ -7315,6 +7386,82 @@ function whiteboardAddObj(type) {
             break;
         default:
             break;
+    }
+}
+
+/**
+ * Promisify the FileReader
+ * @param {object} blob
+ * @returns object Data URL
+ */
+function readBlob(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener('load', () => resolve(reader.result));
+        reader.addEventListener('error', reject);
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * Load PDF and return an array of canvases
+ * @param {object} pdfData
+ * @param {object} pages
+ * @returns canvas object
+ */
+async function loadPDF(pdfData, pages) {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfData = pdfData instanceof Blob ? await readBlob(pdfData) : pdfData;
+    const data = atob(pdfData.startsWith(Base64Prefix) ? pdfData.substring(Base64Prefix.length) : pdfData);
+    try {
+        const pdf = await pdfjsLib.getDocument({ data }).promise;
+        const numPages = pdf.numPages;
+        const canvases = await Promise.all(
+            Array.from({ length: numPages }, (_, i) => {
+                const pageNumber = i + 1;
+                if (pages && pages.indexOf(pageNumber) === -1) return null;
+                return pdf.getPage(pageNumber).then(async (page) => {
+                    const viewport = page.getViewport({ scale: window.devicePixelRatio });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport,
+                    };
+                    await page.render(renderContext).promise;
+                    return canvas;
+                });
+            }),
+        );
+        return canvases.filter((canvas) => canvas !== null);
+    } catch (error) {
+        console.error('Error loading PDF:', error);
+        throw error;
+    }
+}
+
+/**
+ * Convert PDF to fabric.js images and add to canvas
+ * @param {object} pdfData
+ * @param {object} canvas
+ */
+async function pdfToImage(pdfData, canvas) {
+    const scale = 1 / window.devicePixelRatio;
+    try {
+        const canvases = await loadPDF(pdfData);
+        canvases.forEach(async (c) => {
+            canvas.add(
+                new fabric.Image(await c, {
+                    scaleX: scale,
+                    scaleY: scale,
+                }),
+            );
+        });
+    } catch (error) {
+        console.error('Error converting PDF to images:', error);
+        throw error;
     }
 }
 
@@ -8267,11 +8414,27 @@ function showAbout() {
         html: `
         <br/>
         <div id="about">
-            <b><a id="github-button" data-umami-event="GitHub button" href="https://github.com/miroslavpejic85/mirotalk" target="_blank">Open Source</a></b> project
-            <br/><br/>
-            <button id="sponsor-button" data-umami-event="Sponsor button" class="pulsate" onclick="window.open('https://github.com/sponsors/miroslavpejic85?o=esb')"><i class="${className.heart}" ></i>&nbsp;Support</button>
+            <button 
+                id="support-button" 
+                data-umami-event="Support button" 
+                class="pulsate" 
+                onclick="window.open('https://codecanyon.net/user/miroslavpejic85')">
+                <i class="${className.heart}" ></i>&nbsp;Support
+            </button>
             <br /><br />
-            Author:<a id="linkedin-button" data-umami-event="Linkedin button" href="https://www.linkedin.com/in/miroslav-pejic-976a07101/" target="_blank"> Miroslav Pejic</a>
+            Author:<a 
+                id="linkedin-button" 
+                data-umami-event="Linkedin button" 
+                href="https://www.linkedin.com/in/miroslav-pejic-976a07101/" target="_blank"> 
+                Miroslav Pejic
+            </a>
+            <br /><br />
+            Email:<a 
+                id="email-button" 
+                data-umami-event="Email button" 
+                href="mailto:miroslav.pejic.85@gmail.com?subject=MiroTalk P2P info"> 
+                miroslav.pejic.85@gmail.com
+            </a>
         </div>
         `,
         showClass: { popup: 'animate__animated animate__fadeInDown' },
