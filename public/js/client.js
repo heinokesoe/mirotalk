@@ -831,7 +831,7 @@ function refreshMainButtonsToolTipPlacement() {
     setTippy(myHandBtn, 'Raise your hand', placement);
     setTippy(whiteboardBtn, 'Open the whiteboard', placement);
     setTippy(fileShareBtn, 'Share file', placement);
-    setTippy(mySettingsBtn, 'Open settings', placement);
+    setTippy(mySettingsBtn, 'Open the settings', placement);
     setTippy(aboutBtn, 'About this project', placement);
     setTippy(leaveRoomBtn, 'Leave this room', placement);
 }
@@ -4262,8 +4262,8 @@ function loadSettingsFromLocalStorage() {
     msgerSpeechMsg.checked = speechInMessages;
     screenFpsSelect.selectedIndex = lsSettings.screen_fps;
     videoFpsSelect.selectedIndex = lsSettings.video_fps;
-    screenMaxFrameRate = getSelectedIndexValue(screenFpsSelect);
-    videoMaxFrameRate = getSelectedIndexValue(videoFpsSelect);
+    screenMaxFrameRate = parseInt(getSelectedIndexValue(screenFpsSelect));
+    videoMaxFrameRate = parseInt(getSelectedIndexValue(videoFpsSelect));
     notifyBySound = lsSettings.sounds;
     isAudioPitchBar = lsSettings.pitch_bar;
     switchSounds.checked = notifyBySound;
@@ -4998,7 +4998,6 @@ async function toggleScreenSharing(init = false) {
  * @param {boolean} status of screen sharing
  */
 function setScreenSharingStatus(status) {
-    myVideo.style.display = status ? 'block' : 'none';
     emitPeerStatus('video', status);
     initScreenShareBtn.className = status ? className.screenOff : className.screenOn;
     screenShareBtn.className = status ? className.screenOff : className.screenOn;
@@ -6467,10 +6466,12 @@ function hideShowMySettings() {
         mySettings.style.left = '50%';
         mySettings.style.display = 'block';
         isMySettingsVisible = true;
+        setTippy(mySettingsBtn, 'Close the settings', placement);
         return;
     }
     mySettings.style.display = 'none';
     isMySettingsVisible = false;
+    setTippy(mySettingsBtn, 'Open the settings', placement);
 }
 
 /**
@@ -7244,11 +7245,17 @@ function handleWhiteboardToggle() {
  * Whiteboard: Show-Hide
  */
 function toggleWhiteboard() {
-    if (!wbIsOpen) playSound('newMessage');
+    if (!wbIsOpen) {
+        playSound('newMessage');
+        setTippy(whiteboardBtn, 'Close the Whiteboard', placement);
+    } else {
+        setTippy(whiteboardBtn, 'Open the Whiteboard', placement);
+    }
+
     whiteboard.classList.toggle('show');
     whiteboard.style.top = '50%';
     whiteboard.style.left = '50%';
-    wbIsOpen = wbIsOpen ? false : true;
+    wbIsOpen = !wbIsOpen;
 }
 
 /**
