@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.1.1
+ * @version 1.1.3
  *
  */
 
@@ -186,6 +186,7 @@ const buttons = {
         showRecordStreamBtn: true,
         showChatRoomBtn: true,
         showCaptionRoomBtn: true,
+        showRoomEmojiPickerBtn: true,
         showMyHandBtn: true,
         showWhiteboardBtn: true,
         showFileShareBtn: true,
@@ -249,6 +250,13 @@ const forceCamMaxResolutionAndFps = false; // This force the webCam to max resol
 
 const useAvatarSvg = true; // if false the cam-Off avatar = avatarImg
 
+/**
+ * Determines the video zoom mode.
+ * If set to true, the video zooms at the center of the frame.
+ * If set to false, the video zooms at the cursor position.
+ */
+const ZOOM_CENTER_MODE = false;
+
 let isHideMeActive = false; // Hide myself from the meeting view
 
 let notifyBySound = true; // turn on - off sound notifications
@@ -308,7 +316,6 @@ let isEnumerateVideoDevices = false;
 let isEnumerateAudioDevices = false;
 let camera = 'user'; // user = front-facing camera on a smartphone. | environment = the back camera on a smartphone.
 let roomLocked = false;
-let myVideoChange = false;
 let myHandStatus = false;
 let myVideoStatusBefore = false;
 let myVideoStatus = false;
@@ -380,6 +387,7 @@ let recordStreamBtn;
 let fullScreenBtn;
 let chatRoomBtn;
 let captionBtn;
+let roomEmojiPickerBtn;
 let myHandBtn;
 let whiteboardBtn;
 let fileShareBtn;
@@ -427,6 +435,11 @@ let msgerCP;
 let msgerCPHeader;
 let msgerCPCloseBtn;
 let msgerCPList;
+// room emoji picker
+let closeEmojiPickerContainer;
+let emojiPickerContainer;
+let emojiPickerHeader;
+let userEmoji;
 // chat room emoji picker
 let msgerEmojiPicker;
 // my settings
@@ -583,6 +596,7 @@ function getHtmlElementsById() {
     recordStreamBtn = getId('recordStreamBtn');
     fullScreenBtn = getId('fullScreenBtn');
     captionBtn = getId('captionBtn');
+    roomEmojiPickerBtn = getId('roomEmojiPickerBtn');
     chatRoomBtn = getId('chatRoomBtn');
     whiteboardBtn = getId('whiteboardBtn');
     fileShareBtn = getId('fileShareBtn');
@@ -619,6 +633,11 @@ function getHtmlElementsById() {
     msgerCPHeader = getId('msgerCPHeader');
     msgerCPCloseBtn = getId('msgerCPCloseBtn');
     msgerCPList = getId('msgerCPList');
+    // room emoji picker
+    closeEmojiPickerContainer = getId('closeEmojiPickerContainer');
+    emojiPickerContainer = getId('emojiPickerContainer');
+    emojiPickerHeader = getId('emojiPickerHeader');
+    userEmoji = getId(`userEmoji`);
     // chat room emoji picker
     msgerEmojiPicker = getId('msgerEmojiPicker');
     //caption box elements
@@ -777,14 +796,6 @@ function setButtonsToolTip() {
     );
     setTippy(switchSounds, 'Toggle room notify sounds', 'right');
     setTippy(switchShare, "Show 'Share Room' popup on join.", 'right');
-    // tab buttons
-    // setTippy(tabVideoBtn, 'Video devices', 'top');
-    // setTippy(tabAudioBtn, 'Audio devices', 'top');
-    // setTippy(tabParticipantsBtn, 'Participants', 'top');
-    // setTippy(tabProfileBtn, 'Profile', 'top');
-    // setTippy(tabRoomBtn, 'Room', 'top');
-    // setTippy(tabStylingBtn, 'Styling', 'top');
-    // setTippy(tabLanguagesBtn, 'Languages', 'top');
     // whiteboard buttons
     setTippy(wbDrawingColorEl, 'Drawing color', 'bottom');
     setTippy(whiteboardGhostButton, 'Toggle transparent background', 'bottom');
@@ -806,10 +817,6 @@ function setButtonsToolTip() {
     setTippy(whiteboardCleanBtn, 'Clean the board', 'bottom');
     setTippy(whiteboardLockBtn, 'If enabled, participants cannot interact', 'right');
     setTippy(whiteboardCloseBtn, 'Close', 'right');
-    // room actions buttons
-    // setTippy(muteEveryoneBtn, 'Mute everyone except yourself', 'top');
-    // setTippy(hideEveryoneBtn, 'Hide everyone except yourself', 'top');
-    // setTippy(ejectEveryoneBtn, 'Eject everyone except yourself', 'top');
     // Suspend/Hide File transfer buttons
     setTippy(sendAbortBtn, 'Abort file transfer', 'right-start');
     setTippy(receiveHideBtn, 'Hide file transfer', 'right-start');
@@ -837,6 +844,7 @@ function refreshMainButtonsToolTipPlacement() {
     setTippy(fullScreenBtn, 'View full screen', placement);
     setTippy(chatRoomBtn, 'Open the chat', placement);
     setTippy(captionBtn, 'Open the caption', placement);
+    setTippy(roomEmojiPickerBtn, 'Send reaction', placement);
     setTippy(myHandBtn, 'Raise your hand', placement);
     setTippy(whiteboardBtn, 'Open the whiteboard', placement);
     setTippy(fileShareBtn, 'Share file', placement);
@@ -1010,7 +1018,7 @@ function getScreenEnabled() {
  * Check if there is peer connections
  * @returns {boolean} true/false
  */
-function thereIsPeerConnections() {
+function thereArePeerConnections() {
     if (Object.keys(peerConnections).length === 0) return false;
     return true;
 }
@@ -1084,6 +1092,7 @@ function initClientPeer() {
     signalingSocket.on('peerName', handlePeerName);
     signalingSocket.on('peerStatus', handlePeerStatus);
     signalingSocket.on('peerAction', handlePeerAction);
+    signalingSocket.on('message', handleMessage);
     signalingSocket.on('wbCanvasToJson', handleJsonToWbCanvas);
     signalingSocket.on('whiteboardAction', handleWhiteboardAction);
     signalingSocket.on('kickOut', handleKickedOut);
@@ -1108,7 +1117,7 @@ async function sendToServer(msg, config = {}) {
  * @param {object} config data
  */
 async function sendToDataChannel(config) {
-    if (thereIsPeerConnections() && typeof config === 'object' && config !== null) {
+    if (thereArePeerConnections() && typeof config === 'object' && config !== null) {
         for (let peer_id in chatDataChannels) {
             if (chatDataChannels[peer_id].readyState === 'open')
                 await chatDataChannels[peer_id].send(JSON.stringify(config));
@@ -1249,6 +1258,7 @@ function handleButtonsRule() {
     elemDisplay(recordStreamBtn, buttons.main.showRecordStreamBtn);
     elemDisplay(chatRoomBtn, buttons.main.showChatRoomBtn);
     elemDisplay(captionBtn, buttons.main.showCaptionRoomBtn && speechRecognition); // auto-detected
+    elemDisplay(roomEmojiPickerBtn, buttons.main.showRoomEmojiPickerBtn);
     elemDisplay(myHandBtn, buttons.main.showMyHandBtn);
     elemDisplay(whiteboardBtn, buttons.main.showWhiteboardBtn);
     elemDisplay(fileShareBtn, buttons.main.showFileShareBtn);
@@ -1372,14 +1382,12 @@ async function whoAreYou() {
     initVideoSelect.onchange = async () => {
         videoSelect.selectedIndex = initVideoSelect.selectedIndex;
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
-        myVideoChange = true;
         await changeInitCamera(initVideoSelect.value);
         await handleLocalCameraMirror();
     };
     initMicrophoneSelect.onchange = async () => {
         audioInputSelect.selectedIndex = initMicrophoneSelect.selectedIndex;
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
-        myVideoChange = false;
         await changeLocalMicrophone(audioInputSelect.value);
     };
     initSpeakerSelect.onchange = () => {
@@ -1495,7 +1503,6 @@ async function loadLocalStorage() {
     }
     // Start init cam
     if (useVideo && initVideoSelect.value) {
-        myVideoChange = true;
         await changeInitCamera(initVideoSelect.value);
         await handleLocalCameraMirror();
         await checkInitConfig();
@@ -1523,7 +1530,6 @@ async function checkInitConfig() {
 async function changeInitCamera(deviceId) {
     if (initStream) {
         stopTracks(initStream);
-        initVideo.style.display = 'block';
         if (!initVideo.classList.contains('mirror')) {
             initVideo.classList.toggle('mirror');
         }
@@ -1557,7 +1563,6 @@ async function changeInitCamera(deviceId) {
 async function changeLocalCamera(deviceId) {
     if (localVideoMediaStream) {
         await stopVideoTracks(localVideoMediaStream);
-        myVideo.style.display = 'block';
         if (!myVideo.classList.contains('mirror')) {
             myVideo.classList.toggle('mirror');
         }
@@ -2044,12 +2049,12 @@ function handleDisconnect(reason) {
 
     checkRecording();
 
-    for (let peer_id in peerVideoMediaElements) {
+    for (let peer_id in peerConnections) {
         let peerVideoId = peer_id + '_video';
         peerVideoMediaElements[peerVideoId].parentNode.removeChild(peerVideoMediaElements[peerVideoId]);
         adaptAspectRatio();
     }
-    for (let peer_id in peerAudioMediaElements) {
+    for (let peer_id in peerConnections) {
         let peerAudioId = peer_id + '_audio';
         peerAudioMediaElements[peerAudioId].parentNode.removeChild(peerAudioMediaElements[peerAudioId]);
     }
@@ -2239,8 +2244,8 @@ function setButtonsBarPosition(position) {
             document.documentElement.style.setProperty('--btns-top', '95%');
             document.documentElement.style.setProperty('--btns-right', '25%');
             document.documentElement.style.setProperty('--btns-left', '50%');
-            document.documentElement.style.setProperty('--btns-margin-left', '-300px');
-            document.documentElement.style.setProperty('--btns-width', '600px');
+            document.documentElement.style.setProperty('--btns-margin-left', '-330px');
+            document.documentElement.style.setProperty('--btns-width', '660px');
             document.documentElement.style.setProperty('--btns-flex-direction', 'row');
             break;
         default:
@@ -3503,7 +3508,7 @@ function toggleVideoPin(position) {
 }
 
 /**
- * Zoom in/out video element
+ * Zoom in/out video element center or by cursor position
  * @param {string} zoomInBtnId
  * @param {string} zoomOutBtnId
  * @param {string} mediaId
@@ -3511,24 +3516,82 @@ function toggleVideoPin(position) {
  */
 function handleVideoZoomInOut(zoomInBtnId, zoomOutBtnId, mediaId, peerId = null) {
     const id = peerId ? peerId + '_videoStatus' : 'myVideoStatusIcon';
+    const videoWrap = getId(peerId ? peerId + '_videoWrap' : 'myVideoWrap');
     const zoomIn = getId(zoomInBtnId);
     const zoomOut = getId(zoomOutBtnId);
     const video = getId(mediaId);
+
+    /**
+     * 1.1: This value is used when the `zoomDirection` is 'zoom-in'.
+     * It means that when the user scrolls the mouse wheel up (indicating a zoom-in action), the scale factor is set to 1.1.
+     * This means that the content will be scaled up to 110% of its original size with each scroll event, effectively making it larger.
+     */
+    const ZOOM_IN_FACTOR = 1.1;
+    /**
+     * 0.9: This value is used when the zoomDirection is 'zoom-out'.
+     * It means that when the user scrolls the mouse wheel down (indicating a zoom-out action), the scale factor is set to 0.9.
+     * This means that the content will be scaled down to 90% of its original size with each scroll event, effectively making it smaller.
+     */
+    const ZOOM_OUT_FACTOR = 0.9;
+    const MAX_ZOOM = 15;
+    const MIN_ZOOM = 1;
 
     let zoom = 1;
 
     function setTransform() {
         if (isVideoOf(id) || isVideoPrivacyMode(video)) return;
-        zoom = Math.max(1, Math.min(15, zoom));
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
         video.style.scale = zoom;
     }
 
-    video.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        let delta = e.wheelDelta ? e.wheelDelta : -e.deltaY;
-        delta > 0 ? (zoom *= 1.2) : (zoom /= 1.2);
-        setTransform();
-    });
+    function resetZoom(video) {
+        zoom = 1;
+        video.style.transform = '';
+        video.style.transformOrigin = 'center';
+    }
+
+    if (!isMobileDevice) {
+        // Zoom center
+        if (ZOOM_CENTER_MODE) {
+            video.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                let delta = e.wheelDelta ? e.wheelDelta : -e.deltaY;
+                delta > 0 ? (zoom *= 1.2) : (zoom /= 1.2);
+                setTransform();
+            });
+        } else {
+            // Zoom on cursor position
+            video.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (isVideoOf(id) || isVideoPrivacyMode(video)) return;
+
+                const rect = videoWrap.getBoundingClientRect();
+                const cursorX = e.clientX - rect.left;
+                const cursorY = e.clientY - rect.top;
+
+                const zoomDirection = e.deltaY > 0 ? 'zoom-out' : 'zoom-in';
+                const scaleFactor = zoomDirection === 'zoom-out' ? ZOOM_OUT_FACTOR : ZOOM_IN_FACTOR;
+
+                zoom *= scaleFactor;
+                zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+
+                video.style.transformOrigin = `${cursorX}px ${cursorY}px`;
+                video.style.transform = `scale(${zoom})`;
+                video.style.cursor = zoomDirection;
+            });
+
+            videoWrap.addEventListener('mouseleave', () => {
+                video.style.cursor = 'pointer';
+                if (video.id === myVideo.id && !isScreenStreaming) {
+                    resetZoom(video);
+                }
+            });
+
+            video.addEventListener('mouseleave', () => {
+                video.style.cursor = 'pointer';
+            });
+        }
+    }
 
     if (buttons.local.showZoomInOutBtn) {
         zoomIn.addEventListener('click', () => {
@@ -3719,6 +3782,7 @@ function manageLeftButtons() {
     setFullScreenBtn();
     setChatRoomBtn();
     setCaptionRoomBtn();
+    setRoomEmojiButton();
     setChatEmojiBtn();
     setMyHandBtn();
     setMyWhiteboardBtn();
@@ -3889,7 +3953,7 @@ function setChatRoomBtn() {
 
     // show msger participants section
     msgerCPBtn.addEventListener('click', (e) => {
-        if (!thereIsPeerConnections()) {
+        if (!thereArePeerConnections()) {
             return userLog('info', 'No participants detected');
         }
         msgerCP.style.display = 'flex';
@@ -4096,6 +4160,56 @@ function setCaptionRoomBtn() {
     } else {
         captionBtn.style.display = 'none';
         // https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API#browser_compatibility
+    }
+}
+
+/**
+ * Set room emoji reaction button
+ */
+function setRoomEmojiButton() {
+    const pickerRoomOptions = {
+        theme: 'dark',
+        onEmojiSelect: sendEmojiToRoom,
+    };
+
+    const emojiRoomPicker = new EmojiMart.Picker(pickerRoomOptions);
+
+    emojiPickerContainer.appendChild(emojiRoomPicker);
+    emojiPickerContainer.style.display = 'none';
+
+    if (!isMobileDevice) {
+        dragElement(emojiPickerContainer, emojiPickerHeader);
+    }
+
+    roomEmojiPickerBtn.addEventListener('click', (e) => {
+        toggleEmojiPicker();
+    });
+    closeEmojiPickerContainer.addEventListener('click', (e) => {
+        toggleEmojiPicker();
+    });
+
+    function sendEmojiToRoom(data) {
+        console.log('Selected Emoji:', data.native);
+        const message = {
+            type: 'roomEmoji',
+            room_id: roomId,
+            peer_name: myPeerName,
+            emoji: data.native,
+        };
+        if (thereArePeerConnections()) {
+            sendToServer('message', message);
+        }
+        handleEmoji(message);
+    }
+
+    function toggleEmojiPicker() {
+        if (emojiPickerContainer.style.display === 'block') {
+            emojiPickerContainer.style.display = 'none';
+            setColor(roomEmojiPickerBtn, 'black');
+        } else {
+            emojiPickerContainer.style.display = 'block';
+            setColor(roomEmojiPickerBtn, 'green');
+        }
     }
 }
 
@@ -4448,7 +4562,6 @@ function setupMySettings() {
     });
     // select audio input
     audioInputSelect.addEventListener('change', async () => {
-        myVideoChange = false;
         await changeLocalMicrophone(audioInputSelect.value);
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
     });
@@ -4459,7 +4572,6 @@ function setupMySettings() {
     });
     // select video input
     videoSelect.addEventListener('change', async () => {
-        myVideoChange = true;
         await changeLocalCamera(videoSelect.value);
         await handleLocalCameraMirror();
         lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
@@ -4607,7 +4719,6 @@ function setupVideoUrlPlayer() {
  * Camera mirror
  */
 async function handleLocalCameraMirror() {
-    await setMyVideoStatusTrue();
     // This fix IPadPro - Tablet mirror of the back camera
     if ((isMobileDevice || isIPadDevice || isTabletDevice) && !isCamMirrored) {
         myVideo.classList.toggle('mirror');
@@ -5183,6 +5294,9 @@ async function toggleScreenSharing(init = false) {
             } else {
                 emitPeersAction('screenStop');
                 adaptAspectRatio();
+                // Reset zoom
+                myVideo.style.transform = '';
+                myVideo.style.transformOrigin = 'center';
                 //await refreshConstraints(screenMediaPromise, videoMaxFrameRate);
             }
 
@@ -5199,9 +5313,7 @@ async function toggleScreenSharing(init = false) {
                 if (hasVideoTrack(initStream)) {
                     const newStream = new MediaStream([initStream.getVideoTracks()[0]]);
                     initVideo.style.display = 'block';
-                    if (initVideo.classList.contains('mirror')) {
-                        initVideo.classList.toggle('mirror');
-                    }
+                    initVideo.classList.toggle('mirror');
                     initVideo.srcObject = newStream;
                     disable(initVideoSelect, isScreenStreaming);
                     disable(initVideoBtn, isScreenStreaming);
@@ -5228,7 +5340,9 @@ async function toggleScreenSharing(init = false) {
             if (isScreenStreaming || isVideoPinned) getId('myVideoPinBtn').click();
         }
     } catch (err) {
-        await handleToggleScreenException(`[Warning] Unable to share the screen: ${err}`, init);
+        err.name === 'NotAllowedError'
+            ? console.error('Screen sharing permission was denied by the user.')
+            : await handleToggleScreenException(`[Warning] Unable to share the screen: ${err}`, init);
         if (init) return;
     }
 }
@@ -5347,7 +5461,9 @@ function toggleFullScreen() {
  * @param {boolean} localAudioTrackChange - Indicates whether there's a change in the local audio track (default false).
  */
 async function refreshMyStreamToPeers(stream, localAudioTrackChange = false) {
-    if (!thereIsPeerConnections()) return;
+    if (!thereArePeerConnections()) return;
+
+    if (useAudio && localAudioTrackChange) localAudioMediaStream.getAudioTracks()[0].enabled = myAudioStatus;
 
     // Log peer connections and all peers
     console.log('PEER-CONNECTIONS', peerConnections);
@@ -5401,13 +5517,6 @@ async function refreshMyStreamToPeers(stream, localAudioTrackChange = false) {
 async function refreshMyLocalStream(stream, localAudioTrackChange = false) {
     // enable video
     if (useVideo || isScreenStreaming) stream.getVideoTracks()[0].enabled = true;
-
-    // enable audio if changed and disabled
-    if (localAudioTrackChange && !myAudioStatus) {
-        audioBtn.className = className.audioOn;
-        setMyAudioStatus(true);
-        myAudioStatus = true;
-    }
 
     const tracksToInclude = [];
 
@@ -6020,7 +6129,7 @@ function hideCaptionBox() {
  * Send Chat messages to peers in the room
  */
 async function sendChatMessage() {
-    if (!thereIsPeerConnections() && !isChatGPTOn) {
+    if (!thereArePeerConnections() && !isChatGPTOn) {
         cleanMessageInput();
         isChatPasteTxt = false;
         return userLog('info', "Can't send message, no participants in the room");
@@ -7115,7 +7224,7 @@ function setPeerVideoStatus(peer_id, status) {
  * @param {object} peerAction to all peers
  */
 async function emitPeersAction(peerAction) {
-    if (!thereIsPeerConnections()) return;
+    if (!thereArePeerConnections()) return;
 
     sendToServer('peerAction', {
         room_id: roomId,
@@ -7134,7 +7243,7 @@ async function emitPeersAction(peerAction) {
  * @param {object} peerAction to specified peer
  */
 async function emitPeerAction(peer_id, peerAction) {
-    if (!thereIsPeerConnections()) return;
+    if (!thereArePeerConnections()) return;
 
     sendToServer('peerAction', {
         room_id: roomId,
@@ -7176,6 +7285,45 @@ function handlePeerAction(config) {
         case 'ejectAll':
             handleKickedOut(config);
             break;
+    }
+}
+
+/**
+ * Handle incoming message
+ * @param {object} message
+ */
+function handleMessage(message) {
+    console.log('Got message', message);
+
+    switch (message.type) {
+        case 'roomEmoji':
+            handleEmoji(message);
+            break;
+        //....
+        default:
+            break;
+    }
+}
+
+/**
+ * Handle room emoji reaction
+ * @param {object} message
+ * @param {integer} duration time in ms
+ */
+function handleEmoji(message, duration = 5000) {
+    if (userEmoji) {
+        const emojiDisplay = document.createElement('div');
+        emojiDisplay.className = 'animate__animated animate__backInUp';
+        emojiDisplay.style.padding = '10px';
+        emojiDisplay.style.fontSize = '3vh';
+        emojiDisplay.style.color = '#FFF';
+        emojiDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+        emojiDisplay.style.borderRadius = '10px';
+        emojiDisplay.innerText = `${message.emoji} ${message.peer_name}`;
+        userEmoji.appendChild(emojiDisplay);
+        setTimeout(() => {
+            emojiDisplay.remove();
+        }, duration);
     }
 }
 
@@ -7282,7 +7430,7 @@ function setMyVideoOff(peer_name) {
  * @param {string} element type audio/video
  */
 function disableAllPeers(element) {
-    if (!thereIsPeerConnections()) {
+    if (!thereArePeerConnections()) {
         return userLog('info', 'No participants detected');
     }
     Swal.fire({
@@ -7319,7 +7467,7 @@ function disableAllPeers(element) {
  * Eject all participants in the room expect yourself
  */
 function ejectEveryone() {
-    if (!thereIsPeerConnections()) {
+    if (!thereArePeerConnections()) {
         return userLog('info', 'No participants detected');
     }
     Swal.fire({
@@ -7346,7 +7494,7 @@ function ejectEveryone() {
  * @param {string} element type audio/video
  */
 function disablePeer(peer_id, element) {
-    if (!thereIsPeerConnections()) {
+    if (!thereArePeerConnections()) {
         return userLog('info', 'No participants detected');
     }
     Swal.fire({
@@ -7523,7 +7671,7 @@ function handleUnlockTheRoom() {
  * Handle whiteboard toogle
  */
 function handleWhiteboardToggle() {
-    thereIsPeerConnections() ? whiteboardAction(getWhiteboardAction('toggle')) : toggleWhiteboard();
+    thereArePeerConnections() ? whiteboardAction(getWhiteboardAction('toggle')) : toggleWhiteboard();
 }
 
 /**
@@ -8027,7 +8175,7 @@ function saveDataToFile(dataURL, fileName) {
  */
 function wbCanvasToJson() {
     if (!isPresenter && wbIsLock) return;
-    if (thereIsPeerConnections()) {
+    if (thereArePeerConnections()) {
         const config = {
             room_id: roomId,
             wbCanvasJson: JSON.stringify(wbCanvas.toJSON()),
@@ -8040,7 +8188,7 @@ function wbCanvasToJson() {
  * If whiteboard opened, update canvas to all peers connected
  */
 async function wbUpdate() {
-    if (wbIsOpen && thereIsPeerConnections()) {
+    if (wbIsOpen && thereArePeerConnections()) {
         wbCanvasToJson();
         whiteboardAction(getWhiteboardAction(wbIsLock ? 'lock' : 'unlock'));
     }
@@ -8104,7 +8252,7 @@ function confirmCleanBoard() {
  * @param {object} config data
  */
 function whiteboardAction(config) {
-    if (thereIsPeerConnections()) {
+    if (thereArePeerConnections()) {
         sendToServer('whiteboardAction', config);
     }
     handleWhiteboardAction(config, false);
@@ -8375,7 +8523,7 @@ function sendFileInformations(file, peer_id, broadcast = false) {
     // check if valid
     if (fileToSend && fileToSend.size > 0) {
         // no peers in the room
-        if (!thereIsPeerConnections()) {
+        if (!thereArePeerConnections()) {
             return userLog('info', 'No participants detected');
         }
 
@@ -8574,7 +8722,7 @@ function sendVideoUrl(peer_id = null) {
     }).then((result) => {
         if (result.value) {
             result.value = filterXSS(result.value);
-            if (!thereIsPeerConnections()) {
+            if (!thereArePeerConnections()) {
                 return userLog('info', 'No participants detected');
             }
             console.log('Video URL: ' + result.value);
