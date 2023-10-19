@@ -1,4 +1,6 @@
-# <p align="center">MiroTalk P2P</p>
+<h1 align="center">MiroTalk P2P</h1>
+
+<br />
 
 <p align="center">Free WebRTC - P2P - Simple, Secure, Fast Real-Time Video Conferences with support for up to 4k resolution and 60fps. It's compatible with all major browsers and platforms.</p>
 
@@ -181,45 +183,24 @@ $ docker-compose down
 </details>
 
 <details>
-<summary>Ngrok - Https</summary>
+<summary>Documentations</summary>
 
-<br/>
+<br>
 
-You can start a video conference directly from your local PC and make it accessible from any device outside your network by following [these instructions](docs/ngrok.md), or expose it directly on [HTTPS](app/ssl/README.md).
+-   `Ngrok/HTTPS:` You can start a video conference directly from your local PC and make it accessible from any device outside your network by following [these instructions](docs/ngrok.md), or expose it directly on [HTTPS](app/ssl/README.md).
 
-</details>
+-   `Stun/Turn:` Install your own [Stun & Turn](https://docs.mirotalk.com/coturn/stun-turn/) by following [this instructions](./docs/coturn.md).
 
-<details>
-<summary>Stun & Turn</summary>
+-   `Self-hosting:` For `self-hosting MiroTalk P2P` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your MiroTalk P2P instance up and running smoothly.
 
-<br/>
+-   `Rest API:` The [API documentation](https://docs.mirotalk.com/mirotalk-p2p/api/) uses [swagger](https://swagger.io/) at http://localhost:3000/api/v1/docs. Or check it out on [live](https://p2p.mirotalk.com/api/v1/docs).
 
-Install your own [Stun & Turn](https://docs.mirotalk.com/coturn/stun-turn/) by following [this instructions](./docs/coturn.md).
-
-</details>
-
-<details>
-<summary>Self Hosting</summary>
-
-<br/>
-
-For `self-hosting MiroTalk P2P` on your own dedicated server, please refer to [this comprehensive guide](docs/self-hosting.md). It will provide you with all the necessary instructions to get your MiroTalk P2P instance up and running smoothly.
-
-</details>
-
-<details>
-<summary>Rest API</summary>
-
-<br/>
-
--   The [API documentation](https://docs.mirotalk.com/mirotalk-p2p/api/) uses [swagger](https://swagger.io/) at http://localhost:3000/api/v1/docs. Or check it out on [live](https://p2p.mirotalk.com/api/v1/docs).
-
-```bash
-# The response will give you a entrypoint / Room URL for your meeting, where authorization: API_KEY_SECRET.
-$ curl -X POST "http://localhost:3000/api/v1/meeting" -H "authorization: mirotalk_default_secret" -H "Content-Type: application/json"
-$ curl -X POST "https://p2p.mirotalk.com/api/v1/meeting" -H "authorization: mirotalk_default_secret" -H "Content-Type: application/json"
-$ curl -X POST "https://mirotalk.up.railway.app/api/v1/meeting" -H "authorization: mirotalk_default_secret" -H "Content-Type: application/json"
-```
+    ```bash
+    # The response will give you a entrypoint / Room URL for your meeting, where authorization: API_KEY_SECRET.
+    $ curl -X POST "http://localhost:3000/api/v1/meeting" -H "authorization: mirotalk_default_secret" -H "Content-Type: application/json"
+    $ curl -X POST "https://p2p.mirotalk.com/api/v1/meeting" -H "authorization: mirotalk_default_secret" -H "Content-Type: application/json"
+    $ curl -X POST "https://mirotalk.up.railway.app/api/v1/meeting" -H "authorization: mirotalk_default_secret" -H "Content-Type: application/json"
+    ```
 
 </details>
 
@@ -323,12 +304,14 @@ Do you find MiroTalk P2P indispensable for your needs? Join us in supporting thi
 
 <br>
 
+## Diving into Additional MiroTalk Projects:
+
 <details>
 <summary>MiroTalk SFU</summary>
 
-<br/>
+<br>
 
-Try also [MiroTalk SFU](https://github.com/miroslavpejic85/mirotalksfu), the difference between the two projects you can found [here](https://github.com/miroslavpejic85/mirotalksfu/issues/14#issuecomment-932701999).
+Try also [MiroTalk SFU](https://github.com/miroslavpejic85/mirotalksfu) `selective forwarding unit` real-time video conferences, optimized for large groups. `Unlimited time, unlimited concurrent rooms` each having 8+ participants, up to ~ 100 per single CPU.
 
 </details>
 
@@ -337,7 +320,7 @@ Try also [MiroTalk SFU](https://github.com/miroslavpejic85/mirotalksfu), the dif
 
 <br>
 
-Try also [MiroTalk C2C](https://github.com/miroslavpejic85/mirotalkc2c) cam 2 cam.
+Try also [MiroTalk C2C](https://github.com/miroslavpejic85/mirotalkc2c) `peer to peer` real-time video conferences, optimized for cam 2 cam. `Unlimited time, unlimited concurrent rooms` each having 2 participants.
 
 </details>
 
@@ -346,7 +329,7 @@ Try also [MiroTalk C2C](https://github.com/miroslavpejic85/mirotalkc2c) cam 2 ca
 
 <br>
 
-Try also [MiroTalk BRO](https://github.com/miroslavpejic85/mirotalkbro) live broadcasting.
+Try also [MiroTalk BRO](https://github.com/miroslavpejic85/mirotalkbro) `Live broadcast` (peer to peer) live video, audio and screen stream to all connected users (viewers). `Unlimited time, unlimited concurrent rooms` each having a broadcast and many viewers.
 
 </details>
 
@@ -355,8 +338,12 @@ Try also [MiroTalk BRO](https://github.com/miroslavpejic85/mirotalkbro) live bro
 
 <br>
 
-Try also [MiroTalk WEB](https://github.com/miroslavpejic85/mirotalkwebrtc) rooms scheduler.
+Try also [MiroTalk WEB](https://github.com/miroslavpejic85/mirotalkwebrtc) a platform that allows for the management of an `unlimited number of users`. Each user must register with their email, username, and password, after which they gain access to their `personal dashboard`. Within the dashboard, users can `manage their rooms and schedule meetings` using the desired version of MiroTalk on a specified date and time. Invitations to these meetings can be sent via email, shared through the web browser, or sent via SMS.
 
 </details>
 
+---
+
 This project is tested with [BrowserStack](https://www.browserstack.com).
+
+---
