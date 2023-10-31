@@ -38,7 +38,7 @@ dependencies: {
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.1
+ * @version 1.2.2
  *
  */
 
@@ -211,7 +211,6 @@ const views = {
     login: path.join(__dirname, '../../', 'public/views/login.html'),
     newCall: path.join(__dirname, '../../', 'public/views/newcall.html'),
     notFound: path.join(__dirname, '../../', 'public/views/404.html'),
-    permission: path.join(__dirname, '../../', 'public/views/permission.html'),
     privacy: path.join(__dirname, '../../', 'public/views/privacy.html'),
     stunTurn: path.join(__dirname, '../../', 'public/views/testStunTurn.html'),
 };
@@ -295,11 +294,6 @@ app.get(['/newcall'], (req, res) => {
     } else {
         res.sendFile(views.newCall);
     }
-});
-
-// if not allow video/audio
-app.get(['/permission'], (req, res) => {
-    res.sendFile(views.permission);
 });
 
 // privacy policy
@@ -508,8 +502,8 @@ async function ngrokStart() {
             slack_enabled: slackEnabled,
             sentry_enabled: sentryEnabled,
             survey_enabled: surveyEnabled,
-            survey_url: surveyURL,
             redirect_enabled: redirectEnabled,
+            survey_url: surveyURL,
             redirect_url: redirectURL,
             node_version: process.versions.node,
         });
@@ -558,8 +552,8 @@ server.listen(port, null, () => {
             slack_enabled: slackEnabled,
             sentry_enabled: sentryEnabled,
             survey_enabled: surveyEnabled,
-            survey_url: surveyURL,
             redirect_enabled: redirectEnabled,
+            survey_url: surveyURL,
             redirect_url: redirectURL,
             node_version: process.versions.node,
         });
@@ -1244,8 +1238,8 @@ function isValidHttpURL(url) {
             '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
             '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
             '(\\#[-a-z\\d_]*)?$',
-        'i',
-    ); // fragment locator
+        'i', // fragment locator
+    );
     return pattern.test(url);
 }
 

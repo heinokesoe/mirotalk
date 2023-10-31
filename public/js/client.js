@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.1
+ * @version 1.2.2
  *
  */
 
@@ -29,29 +29,26 @@ const signalingServer = getSignalingServer();
 // This room
 const myRoomId = getId('myRoomId');
 const roomId = getRoomId();
-
 const myRoomUrl = window.location.origin + '/join/' + roomId; // share room url
-const welcomeImg = '../images/image-placeholder.png';
-const shareUrlImg = '../images/image-placeholder.png';
-const leaveRoomImg = '../images/leave-room.png';
-const confirmImg = '../images/image-placeholder.png';
-const fileSharingImg = '../images/share.png';
-const roomLockedImg = '../images/locked.png';
-const camOffImg = '../images/cam-off.png';
-const audioOffImg = '../images/audio-off.png';
-const deleteImg = '../images/delete.png';
-const youtubeImg = '../images/youtube.png';
-const messageImg = '../images/message.png';
-const kickedOutImg = '../images/leave-room.png';
-const audioGif = '../images/audio.gif';
-const videoAudioShare = '../images/va-share.png';
-const aboutImg = '../images/mirotalk-logo.gif';
-const imgFeedback = '../images/feedback.png';
-const forbiddenImg = '../images/forbidden.png';
-const avatarImg = '../images/mirotalk-logo.png';
-const camMicOff = '../images/cam-mic-off.png';
-const recordingImg = '../images/recording.png';
-// nice free icon: https://www.iconfinder.com
+
+// Images
+const images = {
+    confirmation: '../images/image-placeholder.png',
+    share: '../images/share.png',
+    locked: '../images/locked.png',
+    videoOff: '../images/cam-off.png',
+    audioOff: '../images/audio-off.png',
+    audioGif: '../images/audio.gif',
+    delete: '../images/delete.png',
+    message: '../images/message.png',
+    leave: '../images/leave-room.png',
+    vaShare: '../images/va-share.png',
+    about: '../images/mirotalk-logo.gif',
+    feedback: '../images/feedback.png',
+    forbidden: '../images/forbidden.png',
+    avatar: '../images/mirotalk-logo.png',
+    recording: '../images/recording.png',
+}; // nice free icon: https://www.iconfinder.com
 
 const className = {
     user: 'fas fa-user',
@@ -129,11 +126,14 @@ const localStorageSettings = lS.getObjectLocalStorage('P2P_SETTINGS');
 const lsSettings = localStorageSettings ? localStorageSettings : lS.P2P_SETTINGS;
 console.log('LOCAL_STORAGE_SETTINGS', lsSettings);
 
+// Check if embedded inside an iFrame
+const isEmbedded = window.self !== window.top;
+
 // Check if PIP is supported by this browser
 const showVideoPipBtn = !isMobileDevice && document.pictureInPictureEnabled;
 
 // Check if Document PIP is supported by this browser
-const showDocumentPipBtn = !isMobileDevice && 'documentPictureInPicture' in window;
+const showDocumentPipBtn = !isMobileDevice && !isEmbedded && 'documentPictureInPicture' in window;
 
 /**
  * Configuration for controlling the visibility of buttons in the MiroTalk P2P client.
@@ -373,10 +373,11 @@ const videoFpsSelect = getId('videoFps');
 const videoFpsDiv = getId('videoFpsDiv');
 const screenFpsSelect = getId('screenFps');
 const pushToTalkDiv = getId('pushToTalkDiv');
-const lastRecordingInfo = getId('lastRecordingInfo');
+const recImage = getId('recImage');
 const pauseRecBtn = getId('pauseRecBtn');
 const resumeRecBtn = getId('resumeRecBtn');
 const recordingTime = getId('recordingTime');
+const lastRecordingInfo = getId('lastRecordingInfo');
 const themeSelect = getId('mirotalkTheme');
 const videoObjFitSelect = getId('videoObjFitSelect');
 const btnsBarSelect = getId('mainButtonsBarPosition');
@@ -481,7 +482,7 @@ const userLimits = {
 
 const isRulesActive = true; // Presenter can do anything, guest is slightly moderate, if false no Rules for the room.
 const forceCamMaxResolutionAndFps = false; // This force the webCam to max resolution as default, up to 4k and 60fps (very high bandwidth are required) if false, you can set it from settings
-const useAvatarSvg = true; // if false the cam-Off avatar = avatarImg
+const useAvatarSvg = true; // if false the cam-Off avatar = images.avatar
 
 /**
  * Determines the video zoom mode.
@@ -709,6 +710,7 @@ function setButtonsToolTip() {
     );
     setTippy(switchSounds, 'Toggle room notify sounds', 'right');
     setTippy(switchShare, "Show 'Share Room' popup on join.", 'right');
+    setTippy(recImage, 'Toggle recording', 'right');
     // Whiteboard buttons
     setTippy(wbDrawingColorEl, 'Drawing color', 'bottom');
     setTippy(whiteboardGhostButton, 'Toggle transparent background', 'bottom');
@@ -1109,7 +1111,7 @@ function roomIsBusy() {
         allowOutsideClick: false,
         allowEscapeKey: false,
         background: swBg,
-        imageUrl: forbiddenImg,
+        imageUrl: images.forbidden,
         position: 'center',
         title: 'Room is busy',
         html: `The room is limited to ${userLimits.count} users. <br/> Please try again later`,
@@ -1167,6 +1169,7 @@ function handleButtonsRule() {
     elemDisplay(videoBtn, buttons.main.showVideoBtn);
     //elemDisplay(screenShareBtn, buttons.main.showScreenBtn, ); // auto-detected
     elemDisplay(recordStreamBtn, buttons.main.showRecordStreamBtn);
+    elemDisplay(recImage, buttons.main.showRecordStreamBtn);
     elemDisplay(chatRoomBtn, buttons.main.showChatRoomBtn);
     elemDisplay(captionBtn, buttons.main.showCaptionRoomBtn && speechRecognition); // auto-detected
     elemDisplay(roomEmojiPickerBtn, buttons.main.showRoomEmojiPickerBtn);
@@ -1348,7 +1351,7 @@ function userNameAlreadyInRoom() {
         allowOutsideClick: false,
         allowEscapeKey: false,
         background: swBg,
-        imageUrl: forbiddenImg,
+        imageUrl: images.forbidden,
         position: 'center',
         title: 'Username',
         html: `The Username is already in use. <br/> Please try with another one`,
@@ -3046,7 +3049,7 @@ function setPeerAvatarImgName(videoAvatarImageId, peerName) {
         const avatarImgSvg = genAvatarSvg(peerName, avatarImgSize);
         videoAvatarImageElement.setAttribute('src', avatarImgSvg);
     } else {
-        videoAvatarImageElement.setAttribute('src', avatarImg);
+        videoAvatarImageElement.setAttribute('src', images.avatar);
     }
 }
 
@@ -3722,6 +3725,9 @@ function setRecordStreamBtn() {
         } else {
             startStreamRecording();
         }
+    });
+    recImage.addEventListener('click', (e) => {
+        recordStreamBtn.click();
     });
 }
 
@@ -5053,7 +5059,7 @@ function shareRoomByEmail() {
         allowOutsideClick: false,
         allowEscapeKey: false,
         background: swBg,
-        imageUrl: messageImg,
+        imageUrl: images.message,
         position: 'center',
         title: 'Select a Date and Time',
         html: '<input type="text" id="datetimePicker" class="flatpickr" />',
@@ -5697,7 +5703,7 @@ function recordingOptions(options, audioMixerTracks) {
     Swal.fire({
         background: swBg,
         position: 'top',
-        imageUrl: recordingImg,
+        imageUrl: images.recording,
         title: 'Recording options',
         showDenyButton: true,
         showCancelButton: true,
@@ -5848,7 +5854,7 @@ function notifyRecording(fromId, from, action) {
     };
     handleDataChannelChat(chatMessage);
     if (!showChatOnMessage) {
-        msgHTML(null, recordingImg, from, `<h1>${action} recording</h1>`);
+        msgHTML(null, images.recording, null, `${from}<br /><h1>${action} recording</h1>`);
     }
 }
 
@@ -6139,7 +6145,7 @@ function cleanMessages() {
         background: swBg,
         position: 'center',
         title: 'Clean up chat messages?',
-        imageUrl: deleteImg,
+        imageUrl: images.delete,
         showDenyButton: true,
         confirmButtonText: `Yes`,
         denyButtonText: `No`,
@@ -6169,7 +6175,7 @@ function cleanCaptions() {
         background: swBg,
         position: 'center',
         title: 'Clean up all caption transcripts?',
-        imageUrl: deleteImg,
+        imageUrl: images.delete,
         showDenyButton: true,
         confirmButtonText: `Yes`,
         denyButtonText: `No`,
@@ -6477,7 +6483,7 @@ function deleteMessage(id) {
         background: swBg,
         position: 'center',
         title: 'Delete this messages?',
-        imageUrl: deleteImg,
+        imageUrl: images.delete,
         showDenyButton: true,
         confirmButtonText: `Yes`,
         denyButtonText: `No`,
@@ -6698,8 +6704,8 @@ function isValidHttpURL(url) {
             '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
             '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
             '(\\#[-a-z\\d_]*)?$',
-        'i',
-    ); // fragment locator
+        'i', // fragment locator
+    );
     return pattern.test(url);
 }
 
@@ -7262,7 +7268,7 @@ function sendPrivateMsgToPeer(toPeerId, toPeerName) {
     Swal.fire({
         background: swBg,
         position: 'center',
-        imageUrl: messageImg,
+        imageUrl: images.message,
         title: 'Send private message',
         input: 'text',
         showCancelButton: true,
@@ -7553,7 +7559,7 @@ function disableAllPeers(element) {
     Swal.fire({
         background: swBg,
         position: 'center',
-        imageUrl: element == 'audio' ? audioOffImg : camOffImg,
+        imageUrl: element == 'audio' ? images.audioOff : images.videoOff,
         title: element == 'audio' ? 'Mute everyone except yourself?' : 'Hide everyone except yourself?',
         text:
             element == 'audio'
@@ -7589,7 +7595,7 @@ function ejectEveryone() {
     }
     Swal.fire({
         background: swBg,
-        imageUrl: kickedOutImg,
+        imageUrl: images.leave,
         position: 'center',
         title: 'Eject everyone except yourself?',
         text: 'Are you sure to want eject all participants from the room?',
@@ -7617,7 +7623,7 @@ function disablePeer(peer_id, element) {
     Swal.fire({
         background: swBg,
         position: 'center',
-        imageUrl: element == 'audio' ? audioOffImg : camOffImg,
+        imageUrl: element == 'audio' ? images.audioOff : images.videoOff,
         title: element == 'audio' ? 'Mute this participant?' : 'Hide this participant?',
         text:
             element == 'audio'
@@ -7669,7 +7675,7 @@ function handleRoomAction(config, emit = false) {
                     allowEscapeKey: false,
                     showDenyButton: true,
                     background: swBg,
-                    imageUrl: roomLockedImg,
+                    imageUrl: images.locked,
                     input: 'text',
                     inputPlaceholder: 'Set Room password',
                     confirmButtonText: `OK`,
@@ -7738,7 +7744,7 @@ function handleRoomLocked() {
         allowOutsideClick: false,
         background: swBg,
         position: 'center',
-        imageUrl: roomLockedImg,
+        imageUrl: images.locked,
         title: 'Oops, Wrong Room Password',
         text: 'The room is locked, try with another one.',
         showDenyButton: false,
@@ -7760,7 +7766,7 @@ function handleUnlockTheRoom() {
         allowOutsideClick: false,
         allowEscapeKey: false,
         background: swBg,
-        imageUrl: roomLockedImg,
+        imageUrl: images.locked,
         title: 'Oops, Room is Locked',
         input: 'text',
         inputPlaceholder: 'Enter the Room password',
@@ -8347,7 +8353,7 @@ function confirmCleanBoard() {
 
     Swal.fire({
         background: swBg,
-        imageUrl: deleteImg,
+        imageUrl: images.delete,
         position: 'center',
         title: 'Clean the board',
         text: 'Are you sure you want to clean the board?',
@@ -8608,7 +8614,7 @@ function selectFileToShare(peer_id, broadcast = false) {
         allowOutsideClick: false,
         background: swBg,
         imageAlt: 'mirotalk-file-sharing',
-        imageUrl: fileSharingImg,
+        imageUrl: images.share,
         position: 'center',
         title: 'Share file',
         input: 'file',
@@ -8783,7 +8789,7 @@ function endDownload() {
             allowOutsideClick: false,
             background: swBg,
             imageAlt: 'mirotalk-file-download',
-            imageUrl: fileSharingImg,
+            imageUrl: images.share,
             position: 'center',
             title: 'Received file',
             text: incomingFileInfo.file.fileName + ' size ' + bytesToSize(incomingFileInfo.file.fileSize),
@@ -8828,7 +8834,7 @@ function sendVideoUrl(peer_id = null) {
     Swal.fire({
         background: swBg,
         position: 'center',
-        imageUrl: videoAudioShare,
+        imageUrl: images.vaShare,
         title: 'Share a Video or Audio',
         text: 'Paste a Video or audio URL',
         input: 'text',
@@ -8887,7 +8893,7 @@ function openVideoUrlPlayer(config) {
             videoAudioUrlElement.setAttribute('src', videoSrc);
             videoAudioUrlElement.type = videoType;
             if (videoAudioUrlElement.type == 'video/mp3') {
-                videoAudioUrlElement.poster = audioGif;
+                videoAudioUrlElement.poster = images.audioGif;
             }
             isVideoUrlPlayerOpen = true;
         }
@@ -9013,7 +9019,7 @@ function kickOut(peer_id) {
     Swal.fire({
         background: swBg,
         position: 'center',
-        imageUrl: confirmImg,
+        imageUrl: images.confirmation,
         title: 'Kick out ' + pName,
         text: 'Are you sure you want to kick out this participant?',
         showDenyButton: true,
@@ -9051,7 +9057,7 @@ function handleKickedOut(config) {
         allowOutsideClick: false,
         background: swBg,
         position: 'center',
-        imageUrl: kickedOutImg,
+        imageUrl: images.leave,
         title: 'Kicked out!',
         html:
             `<h2 style="color: #FF2D00;">` +
@@ -9092,7 +9098,7 @@ function showAbout() {
         position: 'center',
         title: '<strong>WebRTC P2P</strong>',
         imageAlt: 'mirotalk-about',
-        imageUrl: aboutImg,
+        imageUrl: images.about,
         customClass: { image: 'img-about' },
         html: `
         <br/>
@@ -9146,7 +9152,7 @@ function leaveFeedback() {
         allowEscapeKey: false,
         showDenyButton: true,
         background: swBg,
-        imageUrl: imgFeedback,
+        imageUrl: images.feedback,
         title: 'Leave a feedback',
         text: 'Do you want to rate your MiroTalk experience?',
         confirmButtonText: `Yes`,
