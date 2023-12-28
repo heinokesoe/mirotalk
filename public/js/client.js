@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.63
+ * @version 1.2.65
  *
  */
 
@@ -215,6 +215,7 @@ const audioMediaContainer = getId('audioMediaContainer');
 
 // Init audio-video
 const initUser = getId('initUser');
+const initVideoContainer = getQs('.init-video-container');
 const initVideo = getId('initVideo');
 const initVideoBtn = getId('initVideoBtn');
 const initAudioBtn = getId('initAudioBtn');
@@ -494,6 +495,7 @@ const useAvatarSvg = true; // if false the cam-Off avatar = images.avatar
  * If set to false, the video zooms at the cursor position.
  */
 const ZOOM_CENTER_MODE = false;
+const ZOOM_IN_OUT_ENABLED = true; // Video Zoom in/out default (true)
 
 // misc
 let swBg = 'rgba(0, 0, 0, 0.7)'; // swAlert background color
@@ -1343,6 +1345,8 @@ async function whoAreYou() {
 
     initUser.classList.toggle('hidden');
 
+    initVideoContainerShow(myVideoStatus);
+
     Swal.fire({
         allowOutsideClick: false,
         allowEscapeKey: false,
@@ -1355,6 +1359,7 @@ async function whoAreYou() {
         inputValue: window.localStorage.peer_name ? window.localStorage.peer_name : '',
         html: initUser, // inject html
         confirmButtonText: `Join meeting`,
+        customClass: { popup: 'init-modal-size' },
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         inputValidator: async (value) => {
@@ -2633,7 +2638,7 @@ async function loadLocalMedia(stream, kind) {
 
             buttons.local.showVideoPipBtn && handlePictureInPicture(myVideoPiPBtn.id, myLocalMedia.id);
 
-            handleVideoZoomInOut(myVideoZoomInBtn.id, myVideoZoomOutBtn.id, myLocalMedia.id);
+            ZOOM_IN_OUT_ENABLED && handleVideoZoomInOut(myVideoZoomInBtn.id, myVideoZoomOutBtn.id, myLocalMedia.id);
 
             refreshMyVideoStatus(stream);
 
@@ -2920,7 +2925,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             buttons.remote.showVideoPipBtn && handlePictureInPicture(remoteVideoPiPBtn.id, remoteMedia.id);
 
             // handle video zoomIn/Out
-            handleVideoZoomInOut(remoteVideoZoomInBtn.id, remoteVideoZoomOutBtn.id, remoteMedia.id, peer_id);
+            ZOOM_IN_OUT_ENABLED &&
+                handleVideoZoomInOut(remoteVideoZoomInBtn.id, remoteVideoZoomOutBtn.id, remoteMedia.id, peer_id);
 
             // pin video on screen share detected
             if (peer_video_status && peer_screen_status) remoteVideoPinBtn.click();
@@ -5272,6 +5278,7 @@ async function handleVideo(e, init, force = null) {
         videoStatus ? elemDisplay(initVideo, true, 'block') : elemDisplay(initVideo, false);
         initVideoSelect.disabled = !videoStatus;
         lS.setInitConfig(lS.MEDIA_TYPE.video, videoStatus);
+        initVideoContainerShow(videoStatus);
     }
 
     if (!videoStatus) {
@@ -5295,6 +5302,14 @@ async function handleVideo(e, init, force = null) {
     }
 
     setMyVideoStatus(videoStatus);
+}
+
+/**
+ * Handle initVideoContainer
+ * @param {boolean} show
+ */
+function initVideoContainerShow(show = true) {
+    initVideoContainer.style.width = show ? '100%' : 'auto';
 }
 
 /**
@@ -9612,6 +9627,15 @@ function getId(id) {
  */
 function getQsA(selectors) {
     return document.querySelectorAll(selectors);
+}
+
+/**
+ * Get element by selector
+ * @param {string} selector
+ * @returns element
+ */
+function getQs(selector) {
+    return document.querySelector(selector);
 }
 
 /**
