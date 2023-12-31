@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.65
+ * @version 1.2.66
  *
  */
 
@@ -131,10 +131,10 @@ console.log('LOCAL_STORAGE_SETTINGS', lsSettings);
 const isEmbedded = window.self !== window.top;
 
 // Check if PIP is supported by this browser
-const showVideoPipBtn = !isMobileDevice && document.pictureInPictureEnabled;
+const showVideoPipBtn = document.pictureInPictureEnabled;
 
 // Check if Document PIP is supported by this browser
-const showDocumentPipBtn = !isMobileDevice && !isEmbedded && 'documentPictureInPicture' in window;
+const showDocumentPipBtn = !isEmbedded && 'documentPictureInPicture' in window;
 
 /**
  * Configuration for controlling the visibility of buttons in the MiroTalk P2P client.
@@ -1364,6 +1364,8 @@ async function whoAreYou() {
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         inputValidator: async (value) => {
             if (!value) return 'Please enter your name';
+            // Long name
+            if (value.length > 30) return 'Name must be max 30 char';
 
             // prevent xss execution itself
             myPeerName = filterXSS(value);
@@ -3090,6 +3092,31 @@ function adaptAspectRatio() {
 }
 
 /**
+ * Get Gravatar from email
+ * @param {string} email
+ * @param {integer} size
+ * @returns object image
+ */
+function genGravatar(email, size = false) {
+    const hash = md5(email.toLowerCase().trim());
+    const gravatarURL = `https://www.gravatar.com/avatar/${hash}` + (size ? `?s=${size}` : '?s=250');
+    return gravatarURL;
+    function md5(input) {
+        return CryptoJS.MD5(input).toString();
+    }
+}
+
+/**
+ * Check if valid email
+ * @param {string} email
+ * @returns boolean
+ */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+/**
  * Create round svg image with first 2 letters of peerName in center
  * Thank you: https://github.com/phpony
  *
@@ -3145,7 +3172,7 @@ function setPeerAvatarImgName(videoAvatarImageId, peerName) {
     const videoAvatarImageElement = getId(videoAvatarImageId);
     if (useAvatarSvg) {
         const avatarImgSize = isMobileDevice ? 128 : 256;
-        const avatarImgSvg = genAvatarSvg(peerName, avatarImgSize);
+        const avatarImgSvg = isValidEmail(peerName) ? genGravatar(peerName) : genAvatarSvg(peerName, avatarImgSize);
         videoAvatarImageElement.setAttribute('src', avatarImgSvg);
     } else {
         videoAvatarImageElement.setAttribute('src', images.avatar);
@@ -3158,7 +3185,7 @@ function setPeerAvatarImgName(videoAvatarImageId, peerName) {
  * @param {string} peerName me or peer name
  */
 function setPeerChatAvatarImgName(avatar, peerName) {
-    const avatarImg = genAvatarSvg(peerName, 32);
+    const avatarImg = isValidEmail(peerName) ? genGravatar(peerName) : genAvatarSvg(peerName, 32);
 
     switch (avatar) {
         case 'left':
@@ -3579,6 +3606,8 @@ function handlePictureInPicture(btnId, videoId) {
         } else if (document.pictureInPictureEnabled) {
             video.requestPictureInPicture().catch((error) => {
                 console.error('Failed to enter Picture-in-Picture mode:', error);
+                msgPopup('warning', error.message, 'top-end', 6000);
+                elemDisplay(btnPiP, false);
             });
         }
     });
@@ -6463,7 +6492,7 @@ function handleSpeechTranscript(config) {
     const { peer_name, text_data } = config;
 
     const time_stamp = getFormatDate(new Date());
-    const avatar_image = genAvatarSvg(peer_name, 32);
+    const avatar_image = isValidEmail(peer_name) ? genGravatar(peer_name) : genAvatarSvg(peer_name, 32);
 
     if (!isCaptionBoxVisible) showCaptionDraggable();
 
@@ -6660,11 +6689,11 @@ async function msgerAddPeers(peers) {
             const exsistMsgerPrivateDiv = getId(peer_id + '_pMsgDiv');
             // if there isn't add it....
             if (!exsistMsgerPrivateDiv) {
-                const avatarSvg = genAvatarSvg(peer_name, 24);
+                const avatarSvg = isValidEmail(peer_name) ? genGravatar(peer_name) : genAvatarSvg(peer_name, 24);
                 const msgerPrivateDiv = `
                 <div id="${peer_id}_pMsgDiv" class="msger-peer-inputarea">
                 <span style="display: none">${peer_name}</span>
-                <img id="${peer_id}_pMsgAvatar" src="${avatarSvg}"> 
+                <img id="${peer_id}_pMsgAvatar" class="peer-img" src="${avatarSvg}"> 
                     <textarea
                         rows="1"
                         cols="1"
@@ -7166,7 +7195,9 @@ function handlePeerName(config) {
     const msgerPeerName = getId(peer_id + '_pMsgBtn');
     const msgerPeerAvatar = getId(peer_id + '_pMsgAvatar');
     if (msgerPeerName) msgerPeerName.value = peer_name;
-    if (msgerPeerAvatar) msgerPeerAvatar.src = genAvatarSvg(peer_name, 32);
+    if (msgerPeerAvatar) {
+        msgerPeerAvatar.src = isValidEmail(peer_name) ? genGravatar(peer_name) : genAvatarSvg(peer_name, 32);
+    }
     // refresh also peer video avatar name
     setPeerAvatarImgName(peer_id + '_avatar', peer_name);
 }
