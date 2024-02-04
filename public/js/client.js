@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.77
+ * @version 1.2.80
  *
  */
 
@@ -1396,18 +1396,18 @@ async function whoAreYou() {
 
     initVideoSelect.onchange = async () => {
         videoSelect.selectedIndex = initVideoSelect.selectedIndex;
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, initVideoSelect.selectedIndex, initVideoSelect.value);
+        refreshLsDevices();
         await changeInitCamera(initVideoSelect.value);
         await handleLocalCameraMirror();
     };
     initMicrophoneSelect.onchange = async () => {
         audioInputSelect.selectedIndex = initMicrophoneSelect.selectedIndex;
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, initMicrophoneSelect.selectedIndex, initMicrophoneSelect.value);
+        refreshLsDevices();
         await changeLocalMicrophone(initMicrophoneSelect.value);
     };
     initSpeakerSelect.onchange = () => {
         audioOutputSelect.selectedIndex = initSpeakerSelect.selectedIndex;
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, initSpeakerSelect.selectedIndex, initSpeakerSelect.value);
+        refreshLsDevices();
         changeAudioDestination();
     };
 
@@ -1423,6 +1423,15 @@ async function whoAreYou() {
 
     setTippy(initAudioBtn, 'Stop the audio', 'top');
     setTippy(initVideoBtn, 'Stop the video', 'top');
+}
+
+/**
+ * Refresh all LS devices
+ */
+async function refreshLsDevices() {
+    lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
+    lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
+    lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, audioOutputSelect.selectedIndex, audioOutputSelect.value);
 }
 
 /**
@@ -1487,23 +1496,19 @@ async function loadLocalStorage() {
             console.log('12.1 Audio devices seems changed, use default index 0');
             initMicrophoneSelect.selectedIndex = 0;
             audioInputSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(
-                lS.MEDIA_TYPE.audio,
-                initMicrophoneSelect.selectedIndex,
-                initMicrophoneSelect.value,
-            );
+            refreshLsDevices();
         }
         if (lS.DEVICES_COUNT.speaker != localStorageDevices.speaker.count) {
             console.log('12.2 Speaker devices seems changed, use default index 0');
             initSpeakerSelect.selectedIndex = 0;
             audioOutputSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, initSpeakerSelect.selectedIndex, initSpeakerSelect.value);
+            refreshLsDevices();
         }
         if (lS.DEVICES_COUNT.video != localStorageDevices.video.count) {
             console.log('12.3 Video devices seems changed, use default index 0');
             initVideoSelect.selectedIndex = 0;
             videoSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, initVideoSelect.selectedIndex, initVideoSelect.value);
+            refreshLsDevices();
         }
         //
         console.log('12.4 Get Local Storage Devices after', lS.getLocalStorageDevices());
@@ -1561,7 +1566,8 @@ async function changeInitCamera(deviceId) {
             console.error('[Error] changeInitCamera', err);
             userLog('error', 'Error while swapping init camera' + err);
             initVideoSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, initVideoSelect.selectedIndex, initVideoSelect.value);
+            videoSelect.selectedIndex = 0;
+            refreshLsDevices();
             // Refresh page...
             setTimeout(function () {
                 location.reload();
@@ -4656,7 +4662,7 @@ function setupMySettings() {
     // select audio input
     audioInputSelect.addEventListener('change', async () => {
         await changeLocalMicrophone(audioInputSelect.value);
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
+        refreshLsDevices();
     });
     // advance audio options
     micOptionsBtn.addEventListener('click', function () {
@@ -4714,15 +4720,15 @@ function setupMySettings() {
     });
     // select audio output
     audioOutputSelect.addEventListener('change', (e) => {
+        refreshLsDevices();
         changeAudioDestination();
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, audioOutputSelect.selectedIndex, audioOutputSelect.value);
     });
     // select video input
     videoSelect.addEventListener('change', async () => {
         await changeLocalCamera(videoSelect.value);
         await handleLocalCameraMirror();
         await documentPictureInPictureClose();
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
+        refreshLsDevices();
     });
     // select video quality
     videoQualitySelect.addEventListener('change', async (e) => {
@@ -5288,9 +5294,10 @@ function shareRoomByEmail() {
  * @returns {url} roomURL
  */
 function getRoomURL() {
-    return isHostProtected && isPeerAuthEnabled
-        ? window.location.origin + '/join/?room=' + roomId + '&username=' + myUsername + '&password=' + myPassword
-        : myRoomUrl;
+    return myRoomUrl;
+    // return isHostProtected && isPeerAuthEnabled
+    //     ? window.location.origin + '/join/?room=' + roomId + '&username=' + myUsername + '&password=' + myPassword
+    //     : myRoomUrl;
 }
 
 /**
@@ -5697,13 +5704,17 @@ async function refreshMyStreamToPeers(stream, localAudioTrackChange = false) {
 
         // Replace video track
         const videoSender = peerConnections[peer_id].getSenders().find((s) => s.track && s.track.kind === 'video');
+        const videoStream = hasVideoTrack(stream)
+            ? stream.getVideoTracks()[0]
+            : localVideoMediaStream.getVideoTracks()[0];
+        const videoTracks = hasVideoTrack(stream) ? stream : localVideoMediaStream;
 
         if (useVideo && videoSender) {
-            videoSender.replaceTrack(stream.getVideoTracks()[0]);
+            videoSender.replaceTrack(videoStream);
             console.log('REPLACE VIDEO TRACK TO', { peer_id, peer_name });
         } else {
             // Add video track if sender does not exist
-            stream.getTracks().forEach((track) => {
+            videoTracks.getTracks().forEach((track) => {
                 if (track.kind === 'video') {
                     peerConnections[peer_id].addTrack(track);
                     handleRtcOffer(peer_id); // https://groups.google.com/g/discuss-webrtc/c/Ky3wf_hg1l8?pli=1
