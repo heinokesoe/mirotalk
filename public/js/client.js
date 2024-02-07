@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.80
+ * @version 1.2.83
  *
  */
 
@@ -479,6 +479,9 @@ const videoAudioUrlElement = getId('videoAudioUrlElement');
 const speechRecognitionIcon = getId('speechRecognitionIcon');
 const speechRecognitionStart = getId('speechRecognitionStart');
 const speechRecognitionStop = getId('speechRecognitionStop');
+
+// Media
+const sinkId = 'sinkId' in HTMLMediaElement.prototype;
 
 //....
 
@@ -1395,20 +1398,20 @@ async function whoAreYou() {
     // select video - audio
 
     initVideoSelect.onchange = async () => {
-        videoSelect.selectedIndex = initVideoSelect.selectedIndex;
-        refreshLsDevices();
         await changeInitCamera(initVideoSelect.value);
         await handleLocalCameraMirror();
+        videoSelect.selectedIndex = initVideoSelect.selectedIndex;
+        refreshLsDevices();
     };
     initMicrophoneSelect.onchange = async () => {
+        await changeLocalMicrophone(initMicrophoneSelect.value);
         audioInputSelect.selectedIndex = initMicrophoneSelect.selectedIndex;
         refreshLsDevices();
-        await changeLocalMicrophone(initMicrophoneSelect.value);
     };
-    initSpeakerSelect.onchange = () => {
+    initSpeakerSelect.onchange = async () => {
+        await changeAudioDestination();
         audioOutputSelect.selectedIndex = initSpeakerSelect.selectedIndex;
         refreshLsDevices();
-        changeAudioDestination();
     };
 
     // init video -audio buttons
@@ -1484,32 +1487,50 @@ async function loadLocalStorage() {
     console.log('12. Get Local Storage Devices before', localStorageDevices);
     if (localStorageDevices) {
         //
-        initMicrophoneSelect.selectedIndex = localStorageDevices.audio.index;
-        initSpeakerSelect.selectedIndex = localStorageDevices.speaker.index;
-        initVideoSelect.selectedIndex = localStorageDevices.video.index;
+        const initMicrophoneExist = selectOptionByValueExist(initMicrophoneSelect, localStorageDevices.audio.select);
+        const initSpeakerExist = selectOptionByValueExist(initSpeakerSelect, localStorageDevices.speaker.select);
+        const initVideoExist = selectOptionByValueExist(initVideoSelect, localStorageDevices.video.select);
         //
-        audioInputSelect.selectedIndex = initMicrophoneSelect.selectedIndex;
-        audioOutputSelect.selectedIndex = initSpeakerSelect.selectedIndex;
-        videoSelect.selectedIndex = initVideoSelect.selectedIndex;
-        //
-        if (lS.DEVICES_COUNT.audio != localStorageDevices.audio.count) {
+        const audioInputExist = selectOptionByValueExist(audioInputSelect, localStorageDevices.audio.select);
+        const audioOutputExist = selectOptionByValueExist(audioOutputSelect, localStorageDevices.speaker.select);
+        const videoExist = selectOptionByValueExist(videoSelect, localStorageDevices.video.select);
+
+        console.log('Check for audio changes', {
+            previous: localStorageDevices.audio.select,
+            current: audioInputSelect.value,
+        });
+
+        if (!initMicrophoneExist || !audioInputExist) {
             console.log('12.1 Audio devices seems changed, use default index 0');
             initMicrophoneSelect.selectedIndex = 0;
             audioInputSelect.selectedIndex = 0;
             refreshLsDevices();
         }
-        if (lS.DEVICES_COUNT.speaker != localStorageDevices.speaker.count) {
+
+        console.log('Check for speaker changes', {
+            previous: localStorageDevices.speaker.select,
+            current: audioOutputSelect.value,
+        });
+
+        if (!initSpeakerExist || !audioOutputExist) {
             console.log('12.2 Speaker devices seems changed, use default index 0');
             initSpeakerSelect.selectedIndex = 0;
             audioOutputSelect.selectedIndex = 0;
             refreshLsDevices();
         }
-        if (lS.DEVICES_COUNT.video != localStorageDevices.video.count) {
+
+        console.log('Check for video changes', {
+            previous: localStorageDevices.video.select,
+            current: videoSelect.value,
+        });
+
+        if (!initVideoExist || !videoExist) {
             console.log('12.3 Video devices seems changed, use default index 0');
             initVideoSelect.selectedIndex = 0;
             videoSelect.selectedIndex = 0;
             refreshLsDevices();
         }
+
         //
         console.log('12.4 Get Local Storage Devices after', lS.getLocalStorageDevices());
     }
@@ -1519,6 +1540,31 @@ async function loadLocalStorage() {
         await handleLocalCameraMirror();
         await checkInitConfig();
     }
+    // Refresh audio
+    if (useAudio && audioInputSelect.value) {
+        await changeLocalMicrophone(audioInputSelect.value);
+    }
+    // Refresh speaker
+    if (audioOutputSelect.value) await changeAudioDestination();
+}
+
+/**
+ * Use the select element to check if a specific option value exists,
+ * and if it does, automatically set it as the selected option.
+ * @param {object} selectElement
+ * @param {string} value
+ * @return boolean
+ */
+function selectOptionByValueExist(selectElement, value) {
+    let foundValue = false;
+    for (let i = 0; i < selectElement.options.length; i++) {
+        if (selectElement.options[i].value === value) {
+            selectElement.selectedIndex = i;
+            foundValue = true;
+            break;
+        }
+    }
+    return foundValue;
 }
 
 /**
@@ -2342,7 +2388,7 @@ async function enumerateAudioDevices(stream) {
         .then(async () => {
             await stopTracks(stream);
             isEnumerateAudioDevices = true;
-            const sinkId = 'sinkId' in HTMLMediaElement.prototype;
+            //const sinkId = 'sinkId' in HTMLMediaElement.prototype;
             audioOutputSelect.disabled = !sinkId;
             // Check if there is speakers
             if (!sinkId || initSpeakerSelect.options.length === 0) {
@@ -3034,6 +3080,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             handleAudioVolume(remoteAudioVolumeId, remoteAudioMedia.id);
             // Toggle visibility of volume control based on the audio status of the peer
             elemDisplay(getId(remoteAudioVolumeId), peer_audio_status);
+            // Change audio output...
+            if (sinkId && audioOutputSelect.value) await changeAudioDestination(remoteAudioMedia);
             break;
         default:
             break;
@@ -4719,9 +4767,9 @@ function setupMySettings() {
         micOptionsBtn.click();
     });
     // select audio output
-    audioOutputSelect.addEventListener('change', (e) => {
+    audioOutputSelect.addEventListener('change', async () => {
+        await changeAudioDestination();
         refreshLsDevices();
-        changeAudioDestination();
     });
     // select video input
     videoSelect.addEventListener('change', async () => {
@@ -5078,11 +5126,20 @@ async function setLocalVideoQuality() {
 }
 
 /**
- * Change Speaker
+ * Change audio output (Speaker)
  */
-function changeAudioDestination() {
+async function changeAudioDestination(audioElement = false) {
     const audioDestination = audioOutputSelect.value;
-    attachSinkId(myAudio, audioDestination);
+    if (audioElement) {
+        // change audio output to specified participant audio
+        await attachSinkId(audioElement, audioDestination);
+    } else {
+        const audioElements = audioMediaContainer.querySelectorAll('audio');
+        // change audio output for all participants audio
+        audioElements.forEach(async (audioElement) => {
+            await attachSinkId(audioElement, audioDestination);
+        });
+    }
 }
 
 /**
@@ -5090,7 +5147,7 @@ function changeAudioDestination() {
  * @param {object} element audio element to attach the audio output
  * @param {string} sinkId uuid audio output device
  */
-function attachSinkId(element, sinkId) {
+async function attachSinkId(element, sinkId) {
     if (typeof element.sinkId !== 'undefined') {
         element
             .setSinkId(sinkId)
@@ -5099,9 +5156,17 @@ function attachSinkId(element, sinkId) {
             })
             .catch((err) => {
                 let errorMessage = err;
-                if (err.name === 'SecurityError')
-                    errorMessage = `You need to use HTTPS for selecting audio output device: ${err}`;
+                if (err.name === 'SecurityError') {
+                    errorMessage = 'SecurityError: You need to use HTTPS for selecting audio output device';
+                } else if (err.name === 'NotAllowedError') {
+                    errorMessage = 'NotAllowedError: Permission to use audio output device is not granted';
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage = 'NotFoundError: The specified audio output device was not found';
+                } else {
+                    errorMessage = `Error: ${err}`;
+                }
                 console.error(errorMessage);
+                userLog('error', `attachSinkId: ${errorMessage}`);
                 // Jump back to first output device in the list as it's the default.
                 audioOutputSelect.selectedIndex = 0;
             });
@@ -5477,8 +5542,10 @@ async function toggleScreenSharing(init = false) {
     try {
         // Set screen frame rate
         screenMaxFrameRate = parseInt(screenFpsSelect.value, 10);
+
+        // Screen share constraints
         const constraints = {
-            audio: false,
+            audio: myAudioStatus ? false : true,
             video: { frameRate: screenMaxFrameRate },
         };
 
@@ -5518,8 +5585,8 @@ async function toggleScreenSharing(init = false) {
             await emitPeerStatus('screen', myScreenStatus);
 
             await stopLocalVideoTrack();
-            await refreshMyLocalStream(screenMediaPromise);
-            await refreshMyStreamToPeers(screenMediaPromise);
+            await refreshMyLocalStream(screenMediaPromise, !useAudio);
+            await refreshMyStreamToPeers(screenMediaPromise, !useAudio);
 
             if (init) {
                 // Handle init media stream
@@ -5692,11 +5759,31 @@ async function refreshMyStreamToPeers(stream, localAudioTrackChange = false) {
     // Check if the passed stream has an audio track
     const streamHasAudioTrack = hasAudioTrack(stream);
 
+    // Check if the passed stream has an video track
+    const streamHasVideoTrack = hasVideoTrack(stream);
+
+    // Check if the local stream has an audio track
+    const localStreamHasAudioTrack = hasAudioTrack(localAudioMediaStream);
+
+    // Check if the local stream has an video track
+    const localStreamHasVideoTrack = hasVideoTrack(localVideoMediaStream);
+
+    // Determine the audio stream to add to peers
+    const audioStream = streamHasAudioTrack ? stream : localStreamHasAudioTrack && localAudioMediaStream;
+
     // Determine the audio track to replace to peers
-    const myAudioTrack =
+    const audioTrack =
         streamHasAudioTrack && (localAudioTrackChange || isScreenStreaming)
             ? stream.getAudioTracks()[0]
-            : localAudioMediaStream && localAudioMediaStream.getAudioTracks()[0];
+            : localStreamHasAudioTrack && localAudioMediaStream.getAudioTracks()[0];
+
+    // Determine the video stream to add to peers
+    const videoStream = streamHasVideoTrack ? stream : localStreamHasVideoTrack && localVideoMediaStream;
+
+    // Determine the video track to replace to peers
+    const videoTracks = streamHasVideoTrack
+        ? stream.getVideoTracks()[0]
+        : localStreamHasVideoTrack && localVideoMediaStream.getVideoTracks()[0];
 
     // Refresh my stream to connected peers except myself
     for (const peer_id in peerConnections) {
@@ -5704,31 +5791,40 @@ async function refreshMyStreamToPeers(stream, localAudioTrackChange = false) {
 
         // Replace video track
         const videoSender = peerConnections[peer_id].getSenders().find((s) => s.track && s.track.kind === 'video');
-        const videoStream = hasVideoTrack(stream)
-            ? stream.getVideoTracks()[0]
-            : localVideoMediaStream.getVideoTracks()[0];
-        const videoTracks = hasVideoTrack(stream) ? stream : localVideoMediaStream;
 
         if (useVideo && videoSender) {
-            videoSender.replaceTrack(videoStream);
-            console.log('REPLACE VIDEO TRACK TO', { peer_id, peer_name });
+            videoSender.replaceTrack(videoTracks);
+            console.log('REPLACE VIDEO TRACK TO', { peer_id, peer_name, video: videoTracks });
         } else {
-            // Add video track if sender does not exist
-            videoTracks.getTracks().forEach((track) => {
-                if (track.kind === 'video') {
-                    peerConnections[peer_id].addTrack(track);
-                    handleRtcOffer(peer_id); // https://groups.google.com/g/discuss-webrtc/c/Ky3wf_hg1l8?pli=1
-                    console.log('ADD VIDEO TRACK TO', { peer_id, peer_name });
-                }
-            });
+            if (videoStream) {
+                // Add video track if sender does not exist
+                videoStream.getTracks().forEach(async (track) => {
+                    if (track.kind === 'video') {
+                        peerConnections[peer_id].addTrack(track);
+                        await handleRtcOffer(peer_id); // https://groups.google.com/g/discuss-webrtc/c/Ky3wf_hg1l8?pli=1
+                        console.log('ADD VIDEO TRACK TO', { peer_id, peer_name, video: track });
+                    }
+                });
+            }
         }
 
         // Replace audio track
         const audioSender = peerConnections[peer_id].getSenders().find((s) => s.track && s.track.kind === 'audio');
 
-        if (audioSender) {
-            audioSender.replaceTrack(myAudioTrack);
-            console.log('REPLACE AUDIO TRACK TO', { peer_id, peer_name });
+        if (audioSender && audioTrack) {
+            audioSender.replaceTrack(audioTrack);
+            console.log('REPLACE AUDIO TRACK TO', { peer_id, peer_name, audio: audioTrack });
+        } else {
+            if (audioStream) {
+                // Add audio track if sender does not exist
+                audioStream.getTracks().forEach(async (track) => {
+                    if (track.kind === 'audio') {
+                        peerConnections[peer_id].addTrack(track);
+                        await handleRtcOffer(peer_id); // https://groups.google.com/g/discuss-webrtc/c/Ky3wf_hg1l8?pli=1
+                        console.log('ADD AUDIO TRACK TO', { peer_id, peer_name, audio: track });
+                    }
+                });
+            }
         }
     }
 }
@@ -5833,7 +5929,7 @@ function checkRecording() {
  */
 function handleRecordingError(error, popupLog = true) {
     console.error('Recording error', error);
-    if (popupLog) userLog('error', error, 6000);
+    if (popupLog) userLog('error', error);
 }
 
 /**
