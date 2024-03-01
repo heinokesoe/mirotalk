@@ -39,7 +39,7 @@ dependencies: {
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.93
+ * @version 1.2.95
  *
  */
 
@@ -861,7 +861,9 @@ io.sockets.on('connect', async (socket) => {
 
                     const isPeerValid = isAuthPeer(username, password);
 
-                    is_presenter = presenter === '1' || presenter === 'true';
+                    // Presenter if token 'presenter' is '1'/'true' or first to join room
+                    is_presenter =
+                        presenter === '1' || presenter === 'true' || Object.keys(presenters[channel]).length === 0;
 
                     log.debug('[' + socket.id + '] JOIN ROOM - USER AUTH check peer', {
                         ip: peer_ip,
