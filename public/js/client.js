@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.3.02
+ * @version 1.3.05
  *
  */
 
@@ -2767,7 +2767,8 @@ async function setupLocalAudioMedia() {
 function handleMediaError(mediaType, err) {
     playSound('alert');
     //
-    let errMessage = err.message;
+    let errMessage = err;
+
     switch (err.name) {
         case 'NotFoundError':
         case 'DevicesNotFoundError':
@@ -2797,7 +2798,7 @@ function handleMediaError(mediaType, err) {
         <ul style="text-align: left">
             <li>Media type: ${mediaType}</li>
             <li>Error name: ${err.name}</li>
-            <li>Error message: ${errMessage}</li>
+            <li>Error message: <p style="color: red">${errMessage}</p></li>
             <li>Common: <a href="https://blog.addpipe.com/common-getusermedia-errors" target="_blank">getUserMedia errors</a></li>
         </ul>
     `;
