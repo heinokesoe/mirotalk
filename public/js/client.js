@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.3.44
+ * @version 1.3.46
  *
  */
 
@@ -2461,13 +2461,13 @@ function setTheme() {
             setSP('--msger-private-bg', 'radial-gradient(#393939, #000000)');
             setSP('--wb-bg', 'radial-gradient(#393939, #000000)');
             setSP('--elem-border-color', 'none');
-            setSP('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
-            setSP('--select-bg', '#2c2c2c');
-            setSP('--tab-btn-active', 'rgb(30 29 29)');
-            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
-            setSP('--left-msg-bg', '#252d31');
-            setSP('--right-msg-bg', '#056162');
-            setSP('--private-msg-bg', '#6b1226');
+            setSP('--navbar-bg', 'rgba(28, 28, 28, 0.8)');
+            setSP('--select-bg', '#3a3a3a');
+            setSP('--tab-btn-active', '#4f4f4f');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--left-msg-bg', '#353535');
+            setSP('--right-msg-bg', '#4a4a4a');
+            setSP('--private-msg-bg', '#2a2a2a');
             setSP('--btn-bar-bg-color', '#FFFFFF');
             setSP('--btn-bar-color', '#000000');
             document.body.style.background = 'radial-gradient(#393939, #000000)';
@@ -10065,7 +10065,7 @@ function showAbout() {
     Swal.fire({
         background: swBg,
         position: 'center',
-        title: '<strong>WebRTC P2P v1.3.44</strong>',
+        title: '<strong>WebRTC P2P v1.3.46</strong>',
         imageAlt: 'mirotalk-about',
         imageUrl: images.about,
         customClass: { image: 'img-about' },
@@ -10075,7 +10075,6 @@ function showAbout() {
             <button 
                 id="support-button" 
                 data-umami-event="Support button" 
-                class="pulsate" 
                 onclick="window.open('https://codecanyon.net/user/miroslavpejic85')">
                 <i class="${className.heart}" ></i>&nbsp;Support
             </button>
