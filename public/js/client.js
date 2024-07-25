@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.3.50
+ * @version 1.3.53
  *
  */
 
@@ -421,7 +421,7 @@ const micLatencyRange = getId('micLatencyRange');
 const micVolumeRange = getId('micVolumeRange');
 const applyAudioOptionsBtn = getId('applyAudioOptionsBtn');
 const micOptionsBtn = getId('micOptionsBtn');
-const micDropDownMenu = getSl('.dropdown-menu');
+const micDropDownMenu = getId('micDropDownMenu');
 const micLatencyValue = getId('micLatencyValue');
 const micVolumeValue = getId('micVolumeValue');
 
@@ -440,6 +440,8 @@ const whiteboardPencilBtn = getId('whiteboardPencilBtn');
 const whiteboardObjectBtn = getId('whiteboardObjectBtn');
 const whiteboardUndoBtn = getId('whiteboardUndoBtn');
 const whiteboardRedoBtn = getId('whiteboardRedoBtn');
+const whiteboardDropDownMenuBtn = getId('whiteboardDropDownMenuBtn');
+const whiteboardDropdownMenu = getId('whiteboardDropdownMenu');
 const whiteboardImgFileBtn = getId('whiteboardImgFileBtn');
 const whiteboardPdfFileBtn = getId('whiteboardPdfFileBtn');
 const whiteboardImgUrlBtn = getId('whiteboardImgUrlBtn');
@@ -816,6 +818,8 @@ function setButtonsToolTip() {
         'right',
     );
     // Whiteboard buttons
+    setTippy(whiteboardLockBtn, 'If enabled, participants cannot interact', 'right');
+    setTippy(whiteboardCloseBtn, 'Close', 'right');
     setTippy(wbDrawingColorEl, 'Drawing color', 'bottom');
     setTippy(whiteboardGhostButton, 'Toggle transparent background', 'bottom');
     setTippy(wbBackgroundColorEl, 'Background color', 'bottom');
@@ -823,19 +827,6 @@ function setButtonsToolTip() {
     setTippy(whiteboardObjectBtn, 'Object mode', 'bottom');
     setTippy(whiteboardUndoBtn, 'Undo', 'bottom');
     setTippy(whiteboardRedoBtn, 'Redo', 'bottom');
-    setTippy(whiteboardImgFileBtn, 'Add image from file', 'bottom');
-    setTippy(whiteboardPdfFileBtn, 'Add pdf from file', 'bottom');
-    setTippy(whiteboardImgUrlBtn, 'Add image from URL', 'bottom');
-    setTippy(whiteboardTextBtn, 'Add the text', 'bottom');
-    setTippy(whiteboardLineBtn, 'Add the line', 'bottom');
-    setTippy(whiteboardRectBtn, 'Add the rectangle', 'bottom');
-    setTippy(whiteboardTriangleBtn, 'Add triangle', 'bottom');
-    setTippy(whiteboardCircleBtn, 'Add the circle', 'bottom');
-    setTippy(whiteboardSaveBtn, 'Save the board', 'bottom');
-    setTippy(whiteboardEraserBtn, 'Erase the object', 'bottom');
-    setTippy(whiteboardCleanBtn, 'Clean the board', 'bottom');
-    setTippy(whiteboardLockBtn, 'If enabled, participants cannot interact', 'right');
-    setTippy(whiteboardCloseBtn, 'Close', 'right');
     // Suspend/Hide File transfer buttons
     setTippy(sendAbortBtn, 'Abort file transfer', 'right-start');
     setTippy(receiveAbortBtn, 'Abort file transfer', 'right-start');
@@ -4806,6 +4797,11 @@ function setMyWhiteboardBtn() {
     whiteboardRedoBtn.addEventListener('click', (e) => {
         whiteboardAction(getWhiteboardAction('redo'));
     });
+    whiteboardDropDownMenuBtn.addEventListener('click', function () {
+        whiteboardDropdownMenu.style.display === 'block'
+            ? elemDisplay(whiteboardDropdownMenu, false)
+            : elemDisplay(whiteboardDropdownMenu, true, 'block');
+    });
     whiteboardSaveBtn.addEventListener('click', (e) => {
         wbCanvasSaveImg();
     });
@@ -4857,6 +4853,12 @@ function setMyWhiteboardBtn() {
         wbIsBgTransparent = !wbIsBgTransparent;
         //setWhiteboardBgColor(wbIsBgTransparent ? 'rgba(0, 0, 0, 0.100)' : wbBackgroundColorEl.value);
         wbIsBgTransparent ? wbCanvasBackgroundColor('rgba(0, 0, 0, 0.100)') : setTheme();
+    });
+    // Hide the whiteboard dropdown menu if clicked outside
+    document.addEventListener('click', (event) => {
+        if (!whiteboardDropDownMenuBtn.contains(event.target) && !whiteboardDropDownMenuBtn.contains(event.target)) {
+            elemDisplay(whiteboardDropdownMenu, false);
+        }
     });
 }
 
@@ -5796,7 +5798,7 @@ function shareRoomMeetingURL(checkScreen = false) {
         <p style="color:rgb(8, 189, 89);">${roomURL}</p>`,
         showDenyButton: true,
         showCancelButton: true,
-        cancelButtonColor: '#e74c3c',
+        cancelButtonColor: 'red',
         denyButtonColor: 'green',
         confirmButtonText: `Copy URL`,
         denyButtonText: `Email invite`,
@@ -5859,7 +5861,7 @@ function shareRoomByEmail() {
         html: '<input type="text" id="datetimePicker" class="flatpickr" />',
         showCancelButton: true,
         confirmButtonText: 'OK',
-        cancelButtonColor: '#e74c3c',
+        cancelButtonColor: 'red',
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         preConfirm: () => {
@@ -6557,7 +6559,7 @@ function recordingOptions(options, audioMixerTracks) {
         title: 'Recording options',
         showDenyButton: true,
         showCancelButton: true,
-        cancelButtonColor: '#e74c3c',
+        cancelButtonColor: 'red',
         denyButtonColor: 'green',
         confirmButtonText: `Camera`,
         denyButtonText: `Screen/Window`,
@@ -7935,7 +7937,7 @@ function handleHideMe(isHideMeActive) {
     if (isHideMeActive) {
         if (isVideoPinned) myVideoPinBtn.click();
         elemDisplay(myVideoWrap, false);
-        setColor(hideMeBtn, '#e74c3c');
+        setColor(hideMeBtn, 'red');
         hideMeBtn.className = className.hideMeOn;
         playSound('off');
     } else {
@@ -10114,7 +10116,7 @@ function showAbout() {
     Swal.fire({
         background: swBg,
         position: 'center',
-        title: '<strong>WebRTC P2P v1.3.50</strong>',
+        title: '<strong>WebRTC P2P v1.3.53</strong>',
         imageAlt: 'mirotalk-about',
         imageUrl: images.about,
         customClass: { image: 'img-about' },

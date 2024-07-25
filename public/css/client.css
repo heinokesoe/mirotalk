@@ -277,7 +277,7 @@ body {
 }
 
 #buttonsBar button:hover {
-    transform: var(--btns-hover-scale);
+    transform: translateY(-3px);
 }
 
 #buttonsBar button:focus {
@@ -287,7 +287,7 @@ body {
 .fa-phone-slash,
 .fa-microphone-slash,
 .fa-video-slash {
-    color: #e74c3c !important;
+    color: red !important;
 }
 
 /*--------------------------------------------------------------
@@ -699,8 +699,19 @@ a:hover {
     color: #fff;
 }
 
+button {
+    padding: 10px 20px;
+    cursor: pointer;
+    transition:
+        color 0.3s ease,
+        background-color 0.3s ease,
+        border-color 0.3s ease,
+        transform 0.3s ease;
+    outline: none;
+}
+
 button:hover {
-    transform: var(--btns-hover-scale);
+    color: grey;
 }
 
 /*--------------------------------------------------------------
@@ -1061,7 +1072,7 @@ button:hover {
 
 #extraInfo {
     padding: 10px;
-    font-size: 0.8rem;
+    font-size: 12px;
     color: #fff;
     /* background: var(--select-bg); */
     border-radius: 10px;
@@ -1126,15 +1137,15 @@ button:hover {
 #lockRoomBtn:hover,
 #unlockRoomBtn:hover {
     color: var(--hover-color);
-    transform: scale(0.95);
+    transform: translateY(-3px);
     transition: all 0.3s ease-in-out;
 }
 
 #muteEveryoneBtn:hover,
 #hideEveryoneBtn:hover,
 #ejectEveryoneBtn:hover {
-    color: #e74c3c;
-    transform: scale(0.95);
+    color: red;
+    transform: translateY(-3px);
     transition: all 0.3s ease-in-out;
 }
 
@@ -1190,13 +1201,14 @@ th {
     width: 65%;
     background-color: var(--body-bg);
     min-height: 500px;
-    max-height: 500px;
+    max-height: 550px;
     overflow-x: none;
     overflow-y: auto;
 }
 
 @media screen and (max-width: 830px) {
     .tab {
+        display: inline;
         width: 100%;
         min-height: auto;
         flex-direction: row;
@@ -1229,7 +1241,7 @@ th {
 /* Change background color of buttons on hover */
 .tab button:hover {
     background-color: transparent;
-    transform: scale(0.95);
+    transform: translateY(-3px);
 }
 
 /* Create an active/current tablink class */
@@ -1729,10 +1741,6 @@ hr {
     background: #dbdbdb;
     margin-top: 15px;
     margin-bottom: 15px;
-}
-
-button {
-    cursor: pointer;
 }
 
 .hidden {
