@@ -271,8 +271,8 @@ access to use this app.
                 <div class="caption-inputarea">
                     <select id="recognitionLanguage"></select>
                     <select id="recognitionDialect"></select>
-                    <button id="speechRecognitionStart" class="fas fa-play">&nbsp;Start</button>
-                    <button id="speechRecognitionStop" class="fas fa-stop">&nbsp;Stop</button>
+                    <button id="speechRecognitionStart"><i class="fas fa-play"></i> Start</button>
+                    <button id="speechRecognitionStop"><i class="fas fa-stop"></i> Stop</button>
                 </div>
             </section>
         </section>
@@ -598,7 +598,9 @@ access to use this app.
                                     </tr>
                                     <tr>
                                         <td>
-                                            <button class="buttons" id="applyAudioOptionsBtn">Apply options</button>
+                                            <button id="applyAudioOptionsBtn" class="fas fa-check">
+                                                <p>Apply options</p>
+                                            </button>
                                         </td>
                                     </tr>
                                 </table>
@@ -662,7 +664,6 @@ access to use this app.
                     </div>
 
                     <div id="tabMedia" class="tabcontent">
-                        <br />
                         <button id="shareMediaAudioVideoBtn" class="buttons">
                             <i class="fa-solid fa-circle-play"></i>
                             <p>Share a Video or Audio</p>
@@ -841,10 +842,8 @@ access to use this app.
             <header id="whiteboardHeader" class="whiteboard-header">
                 <div id="whiteboardTitle" class="whiteboard-header-title">
                     <button id="whiteboardCloseBtn" class="fas fa-times"></button>
-                    <label id="whiteboardLockBtn" class="switch">
-                        <input type="checkbox" />
-                        <span class="slider round"></span>
-                    </label>
+                    <button id="whiteboardLockBtn" class="fa-solid fa-lock-open"></button>
+                    <button id="whiteboardUnlockBtn" class="fa-solid fa-lock"></button>
                 </div>
                 <div id="whiteboardOptions" class="whiteboard-header-options">
                     <button id="whiteboardGhostButton" class="fas fa-circle-half-stroke"></button>

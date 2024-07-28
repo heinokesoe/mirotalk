@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.3.53
+ * @version 1.3.57
  *
  */
 
@@ -454,6 +454,7 @@ const whiteboardSaveBtn = getId('whiteboardSaveBtn');
 const whiteboardEraserBtn = getId('whiteboardEraserBtn');
 const whiteboardCleanBtn = getId('whiteboardCleanBtn');
 const whiteboardLockBtn = getId('whiteboardLockBtn');
+const whiteboardUnlockBtn = getId('whiteboardUnlockBtn');
 const whiteboardCloseBtn = getId('whiteboardCloseBtn');
 
 // Room actions buttons
@@ -818,7 +819,8 @@ function setButtonsToolTip() {
         'right',
     );
     // Whiteboard buttons
-    setTippy(whiteboardLockBtn, 'If enabled, participants cannot interact', 'right');
+    setTippy(whiteboardLockBtn, 'Toggle Lock whiteboard', 'right');
+    setTippy(whiteboardUnlockBtn, 'Toggle Lock whiteboard', 'right');
     setTippy(whiteboardCloseBtn, 'Close', 'right');
     setTippy(wbDrawingColorEl, 'Drawing color', 'bottom');
     setTippy(whiteboardGhostButton, 'Toggle transparent background', 'bottom');
@@ -828,9 +830,9 @@ function setButtonsToolTip() {
     setTippy(whiteboardUndoBtn, 'Undo', 'bottom');
     setTippy(whiteboardRedoBtn, 'Redo', 'bottom');
     // Suspend/Hide File transfer buttons
-    setTippy(sendAbortBtn, 'Abort file transfer', 'right-start');
-    setTippy(receiveAbortBtn, 'Abort file transfer', 'right-start');
-    setTippy(receiveHideBtn, 'Hide file transfer', 'right-start');
+    setTippy(sendAbortBtn, 'Abort file transfer', 'bottom');
+    setTippy(receiveAbortBtn, 'Abort file transfer', 'bottom');
+    setTippy(receiveHideBtn, 'Hide file transfer', 'bottom');
     // Video/audio URL player
     setTippy(videoUrlCloseBtn, 'Close the video player', 'bottom');
     setTippy(videoAudioCloseBtn, 'Close the video player', 'bottom');
@@ -1419,8 +1421,8 @@ function handleButtonsRule() {
     elemDisplay(tabEmailInvitation, buttons.settings.showTabEmailInvitation);
     // Whiteboard
     buttons.whiteboard.whiteboardLockBtn
-        ? elemDisplay(whiteboardLockBtn, true)
-        : elemDisplay(whiteboardLockBtn, false, 'flex');
+        ? elemDisplay(whiteboardLockBtn, true, 'flex')
+        : elemDisplay(whiteboardLockBtn, false);
 }
 
 /**
@@ -4835,9 +4837,11 @@ function setMyWhiteboardBtn() {
     whiteboardCleanBtn.addEventListener('click', (e) => {
         confirmCleanBoard();
     });
-    whiteboardLockBtn.addEventListener('change', (e) => {
-        wbIsLock = !wbIsLock;
-        whiteboardAction(getWhiteboardAction(wbIsLock ? 'lock' : 'unlock'));
+    whiteboardLockBtn.addEventListener('click', (e) => {
+        toggleLockUnlockWhiteboard();
+    });
+    whiteboardUnlockBtn.addEventListener('click', (e) => {
+        toggleLockUnlockWhiteboard();
     });
     whiteboardCloseBtn.addEventListener('click', (e) => {
         handleWhiteboardToggle();
@@ -8695,6 +8699,29 @@ function handleWhiteboardToggle() {
 }
 
 /**
+ * Toggle Lock/Unlock whiteboard
+ */
+function toggleLockUnlockWhiteboard() {
+    wbIsLock = !wbIsLock;
+
+    const btnToShow = wbIsLock ? whiteboardUnlockBtn : whiteboardLockBtn;
+    const btnToHide = wbIsLock ? whiteboardLockBtn : whiteboardUnlockBtn;
+    const btnColor = wbIsLock ? 'red' : 'white';
+    const action = wbIsLock ? 'lock' : 'unlock';
+
+    elemDisplay(btnToShow, true, 'flex');
+    elemDisplay(btnToHide, false);
+    setColor(whiteboardUnlockBtn, btnColor);
+
+    whiteboardAction(getWhiteboardAction(action));
+
+    if (wbIsLock) {
+        userLog('toast', 'The whiteboard is locked. \n The participants cannot interact with it.');
+        playSound('locked');
+    }
+}
+
+/**
  * Whiteboard: Show-Hide
  */
 function toggleWhiteboard() {
@@ -10116,7 +10143,7 @@ function showAbout() {
     Swal.fire({
         background: swBg,
         position: 'center',
-        title: '<strong>WebRTC P2P v1.3.53</strong>',
+        title: '<strong>WebRTC P2P v1.3.57</strong>',
         imageAlt: 'mirotalk-about',
         imageUrl: images.about,
         customClass: { image: 'img-about' },
@@ -10366,7 +10393,7 @@ function userLog(type, message, timer = 3000) {
             });
             Toast.fire({
                 icon: 'info',
-                title: message,
+                text: message,
                 showClass: { popup: 'animate__animated animate__fadeInDown' },
                 hideClass: { popup: 'animate__animated animate__fadeOutUp' },
             });

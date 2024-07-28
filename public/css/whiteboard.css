@@ -45,17 +45,18 @@
     align-items: center;
 }
 
+#whiteboardUnlockBtn,
 #whiteboardLockBtn {
-    margin-left: 5px;
-    margin-right: 5px;
+    display: none;
+    margin-left: 3px;
+    margin-right: 3px;
 }
 
 .whiteboard-header-title button,
 .whiteboard-header-options button {
     padding: 10px;
-    font-size: 1.2rem;
-    margin: 1px;
-    background: rgba(0, 0, 0, 0.2);
+    font-size: 1rem;
+    background: transparent;
     color: #fff;
     border: none !important;
     border-radius: 5px;
@@ -65,9 +66,7 @@
 
 .whiteboard-header-title button:hover,
 .whiteboard-header-options button:hover {
-    color: var(--hover-color);
-    transform: var(--btns-hover-scale);
-    transition: all 0.3s ease-in-out;
+    background: var(--body-bg);
 }
 
 .whiteboardColorPicker {
@@ -76,9 +75,9 @@
     appearance: none;
     padding: 0;
     width: 20px;
-    height: 20px;
-    margin: 1px;
-    border-radius: 50px;
+    height: 15px;
+    margin: 2px;
+    border-radius: 20px;
     border: solid 0.5px #afadad38;
     cursor: pointer;
 }
@@ -142,7 +141,8 @@
     display: none;
     border-radius: 5px;
     background: var(--body-bg);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */
+    box-shadow: var(--box-shadow);
     border: none;
     overflow-y: auto;
     overflow-x: hidden;
@@ -157,19 +157,15 @@
     width: 160px;
     font-size: 0.8em;
     text-align: left;
-    padding: 8px 16px;
+    padding: 10px;
     border: none;
     background: none;
     cursor: pointer;
-    transition:
-        background 0.3s,
-        color 0.3s;
 }
 
 .whiteboard-dropdown-menu button:hover {
-    background: var(--select-bg);
+    background: var(--select-bg) !important;
     color: #ffffff;
-    transform: scale(1);
 }
 
 /* Styles for icons and SVGs inside buttons */
