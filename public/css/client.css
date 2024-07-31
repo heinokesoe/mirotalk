@@ -856,17 +856,27 @@ button:hover {
     position: absolute;
     bottom: 105px;
     left: 10px;
+    border: var(--border);
+    border-radius: 5px;
+    --rgb-background: var(--body-bg);
+    --color-border-over: var(--body-bg);
+    --font-family: 'Comfortaa';
 }
 
 .roomEmoji {
     z-index: 18;
     position: absolute;
     display: none;
-    background: #151616;
+    background: var(--body-bg);
+    border: var(--border);
     border-radius: 10px;
+    box-shadow: var(--box-shadow);
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    --rgb-background: var(--body-bg);
+    --color-border-over: var(--body-bg);
+    --font-family: 'Comfortaa';
 }
 
 .userEmoji {
@@ -874,25 +884,31 @@ button:hover {
     position: absolute;
     left: 80px;
     bottom: 60px;
+    border-radius: 10px;
 }
 
 .emojiPickerHeader {
     display: flex;
     justify-content: flex-start;
-    background: #151616;
+    padding: 5px;
+    color: #fff;
+    background: var(--body-bg);
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-    padding: 10px;
-    color: #fff;
     cursor: move;
 }
 
 #closeEmojiPickerContainer {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     color: #ffffff;
     background: transparent;
     border-radius: 10px;
     border: none;
+    transition: background 0.23s;
+}
+
+#closeEmojiPickerContainer:hover {
+    background: var(--body-bg);
 }
 
 /*--------------------------------------------------------------
@@ -903,8 +919,8 @@ button:hover {
     padding: 10px;
     text-align: center;
     color: white;
-    background: black;
-    border: none;
+    background: var(--body-bg);
+    border: var(--border);
     border-radius: 5px;
 }
 
@@ -929,7 +945,7 @@ button:hover {
     margin: auto;
     padding: 10px;
     width: 50%;
-    min-height: 480px;
+    min-height: 560px !important;
     background: var(--body-bg);
     box-shadow: var(--box-shadow);
     border: var(--border);
@@ -1063,6 +1079,16 @@ button:hover {
     transform: translateY(-3px) !important;
 }
 
+.extra-info-container {
+    min-height: 175px;
+    max-height: 175px;
+    margin-top: 15px;
+    border-radius: 5px;
+    background: var(--body-bg);
+    overflow-x: none;
+    overflow-y: auto;
+}
+
 #extraInfo {
     padding: 10px;
     font-size: 12px;
@@ -1192,11 +1218,6 @@ th {
 .tabActions {
     position: relative;
     width: 65%;
-    background-color: var(--body-bg);
-    min-height: 500px;
-    max-height: 550px;
-    overflow-x: none;
-    overflow-y: auto;
 }
 
 @media screen and (max-width: 830px) {
@@ -1245,8 +1266,15 @@ th {
 /* Style the tab content */
 .tabcontent {
     display: none;
+    margin-top: 15px;
     padding: 6px 12px;
+    width: 100%;
+    max-height: 530px;
+    min-height: 480px;
     border-top: none;
+    background-color: var(--body-bg);
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .tabcontent button {
@@ -1358,6 +1386,15 @@ input:checked + .slider:before {
 # Swal2
 --------------------------------------------------------------*/
 
+.swal2-popup {
+    border: 0.5px solid rgb(255 255 255 / 32%) !important;
+    /* box-shadow: var(--box-shadow) !important; */
+}
+
+.swal2-popup .swal2-styled:focus {
+    box-shadow: none !important;
+}
+
 .swal2-validation-message,
 .swal2-title,
 .swal2-content,
@@ -1382,14 +1419,6 @@ input:checked + .slider:before {
     background-color: transparent !important;
 }
 
-.swal2-popup {
-    border: var(--border) !important;
-}
-
-.swal2-popup .swal2-styled:focus {
-    box-shadow: none !important;
-}
-
 .swal2-select {
     background-color: var(--select-bg) !important;
     color: white !important;
@@ -1397,7 +1426,7 @@ input:checked + .slider:before {
 }
 
 .swal2-timer-progress-bar-container {
-    background: #376df9;
+    background: var(--body-bg);
 }
 
 .img-about {

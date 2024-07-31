@@ -160,11 +160,6 @@ access to use this app.
             <section id="msger" class="msger">
                 <header id="msgerHeader" class="msger-header">
                     <div class="msger-header-title">
-                        <button id="msgerClose" class="fas fa-times"></button>
-                        <button id="msgerMaxBtn" class="fas fa-expand"></button>
-                        <button id="msgerMinBtn" class="fas fa-compress"></button>
-                    </div>
-                    <div>
                         <div id="msgerShowChatOnMsgDiv" class="title ml-10">
                             <i class="fa-solid fa-eye"></i>
                             <label class="switch ml-10">
@@ -184,6 +179,9 @@ access to use this app.
                         <button id="msgerTheme" class="fas fa-ghost"></button>
                         <button id="msgerSaveBtn" class="fas fa-save"></button>
                         <button id="msgerClean" class="fas fa-trash"></button>
+                        <button id="msgerMaxBtn" class="fas fa-expand"></button>
+                        <button id="msgerMinBtn" class="fas fa-compress"></button>
+                        <button id="msgerClose" class="fas fa-times"></button>
                     </div>
                 </header>
 
@@ -255,15 +253,15 @@ access to use this app.
             <section id="caption" class="caption">
                 <header id="captionHeader" class="caption-header">
                     <div class="caption-header-title">
-                        <button id="captionClose" class="fas fa-times"></button>
-                        <button id="captionMaxBtn" class="fas fa-expand"></button>
-                        <button id="captionMinBtn" class="fas fa-compress"></button>
                         <button id="speechRecognitionIcon" class="fas fa-microphone-alt"></button>
                     </div>
                     <div class="caption-header-options">
                         <button id="captionTheme" class="fas fa-ghost"></button>
                         <button id="captionSaveBtn" class="fas fa-save"></button>
                         <button id="captionClean" class="fas fa-trash"></button>
+                        <button id="captionMaxBtn" class="fas fa-expand"></button>
+                        <button id="captionMinBtn" class="fas fa-compress"></button>
+                        <button id="captionClose" class="fas fa-times"></button>
                     </div>
                 </header>
 
@@ -321,7 +319,6 @@ access to use this app.
 
                 <div class="tabActions">
                     <div id="tabRoom" class="tabcontent">
-                        <br />
                         <table class="settingsTable">
                             <tr>
                                 <td>
@@ -377,7 +374,6 @@ access to use this app.
                     </div>
 
                     <div id="tabVideo" class="tabcontent">
-                        <br />
                         <div>
                             <div class="title">
                                 <i class="fas fa-video"></i>
@@ -400,6 +396,8 @@ access to use this app.
                             <option value="fhdVideo">FULL HD</option>
                             <option value="2kVideo">2k</option>
                             <option value="4kVideo">4K</option>
+                            <option value="6kVideo">6K</option>
+                            <option value="8kVideo">8K</option>
                         </select>
                         <br />
                         <div class="title">
@@ -445,7 +443,6 @@ access to use this app.
                     </div>
 
                     <div id="tabAudio" class="tabcontent">
-                        <br />
                         <div>
                             <div class="title">
                                 <i class="fas fa-microphone"></i>
@@ -671,7 +668,6 @@ access to use this app.
                     </div>
 
                     <div id="tabParticipants" class="tabcontent">
-                        <br />
                         <div class="title">
                             <i class="fa-solid fa-users"></i>
                             <p id="peersCount"></p>
@@ -714,11 +710,12 @@ access to use this app.
                             <i class="fa-solid fa-circle-info"></i>
                             <p>Extra info:</p>
                         </div>
-                        <pre id="extraInfo"></pre>
+                        <div class="extra-info-container">
+                            <pre id="extraInfo"></pre>
+                        </div>
                     </div>
 
                     <div id="tabNetwork" class="tabcontent">
-                        <br />
                         <table id="mySettingsTable">
                             <tr>
                                 <td class="width-130">
@@ -761,7 +758,6 @@ access to use this app.
                     </div>
 
                     <div id="tabStyling" class="tabcontent">
-                        <br />
                         <div class="title">
                             <i class="fa-solid fa-palette"></i>
                             <p>Theme</p>
@@ -820,7 +816,6 @@ access to use this app.
                     </div>
 
                     <div id="tabLanguages" class="tabcontent">
-                        <br />
                         <div class="title">
                             <i class="fa-solid fa-language"></i>
                             <p>Language</p>
