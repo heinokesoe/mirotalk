@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.3.60
+ * @version 1.3.62
  *
  */
 
@@ -85,6 +85,7 @@ const className = {
     speech: 'fas fa-volume-high',
     heart: 'fas fa-heart',
     pip: 'fas fa-images',
+    hideAll: 'fas fa-eye',
 };
 // https://fontawesome.com/search?o=r&m=free
 
@@ -197,6 +198,7 @@ const buttons = {
         showShareVideoAudioBtn: true,
         showPrivateMessageBtn: true,
         showZoomInOutBtn: false,
+        showVideoFocusBtn: true,
         showVideoPipBtn: showVideoPipBtn,
     },
     local: {
@@ -1495,7 +1497,7 @@ async function whoAreYou() {
         title: 'MiroTalk P2P',
         position: 'center',
         input: 'text',
-        inputPlaceholder: 'Enter your name',
+        inputPlaceholder: 'Enter your email or name',
         inputAttributes: { maxlength: 32 },
         inputValue: window.localStorage.peer_name ? window.localStorage.peer_name : '',
         html: initUser, // inject html
@@ -1504,7 +1506,7 @@ async function whoAreYou() {
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         inputValidator: async (value) => {
-            if (!value) return 'Please enter your name';
+            if (!value) return 'Please enter your email or name';
             // Long name
             if (value.length > 30) return 'Name must be max 30 char';
 
@@ -3255,6 +3257,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             const remoteVideoToImgBtn = document.createElement('button');
             const remoteVideoFullScreenBtn = document.createElement('button');
             const remoteVideoPinBtn = document.createElement('button');
+            const remoteVideoFocusBtn = document.createElement('button');
             const remoteVideoMirrorBtn = document.createElement('button');
             const remoteVideoZoomInBtn = document.createElement('button');
             const remoteVideoZoomOutBtn = document.createElement('button');
@@ -3336,6 +3339,10 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             remoteVideoPinBtn.setAttribute('id', peer_id + '_pinUnpin');
             remoteVideoPinBtn.className = className.pinUnpin;
 
+            // remote video hide all button
+            remoteVideoFocusBtn.setAttribute('id', peer_id + '_focusMode');
+            remoteVideoFocusBtn.className = className.hideAll;
+
             // remote video toggle mirror
             remoteVideoMirrorBtn.setAttribute('id', peer_id + '_toggleMirror');
             remoteVideoMirrorBtn.className = className.mirror;
@@ -3357,6 +3364,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
                 setTippy(remoteVideoZoomOutBtn, 'Zoom out video', 'bottom');
                 setTippy(remoteVideoPiPBtn, 'Toggle picture in picture', 'bottom');
                 setTippy(remoteVideoPinBtn, 'Toggle Pin video', 'bottom');
+                setTippy(remoteVideoFocusBtn, 'Toggle Focus mode', 'bottom');
                 setTippy(remoteVideoMirrorBtn, 'Toggle video mirror', 'bottom');
             }
 
@@ -3384,6 +3392,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
 
             // attach to remote video nav bar
             !isMobileDevice && remoteVideoNavBar.appendChild(remoteVideoPinBtn);
+
+            buttons.remote.showVideoFocusBtn && remoteVideoNavBar.appendChild(remoteVideoFocusBtn);
 
             remoteVideoNavBar.appendChild(remoteVideoMirrorBtn);
 
@@ -3427,6 +3437,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
 
             remoteVideoWrap.className = 'Camera';
             remoteVideoWrap.setAttribute('id', peer_id + '_videoWrap');
+            remoteVideoWrap.style.display = isHideALLVideosActive ? 'none' : 'block';
 
             // add elements to videoWrap div
             remoteVideoWrap.appendChild(remoteVideoNavBar);
@@ -3450,6 +3461,9 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
 
             // handle video pin/unpin
             handleVideoPinUnpin(remoteMedia.id, remoteVideoPinBtn.id, remoteVideoWrap.id, peer_id, peer_screen_status);
+
+            // handle video focus mode
+            handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap);
 
             // handle video toggle mirror
             handleVideoToggleMirror(remoteMedia.id, remoteVideoMirrorBtn.id);
@@ -4036,6 +4050,35 @@ function toggleVideoPin(position) {
 }
 
 /**
+ * Handle video focus mode (hide all except selected one)
+ * @param {object} remoteVideoFocusBtn button
+ * @param {object} remoteVideoWrap videoWrapper
+ */
+function handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap) {
+    if (remoteVideoFocusBtn) {
+        remoteVideoFocusBtn.addEventListener('click', (e) => {
+            if (isHideMeActive) {
+                return userLog('toast', 'To use this feature, please toggle Hide self view before', 'top-end', 6000);
+            }
+            isHideALLVideosActive = !isHideALLVideosActive;
+            e.target.style.color = isHideALLVideosActive ? 'lime' : 'white';
+            if (isHideALLVideosActive) {
+                remoteVideoWrap.style.width = '100%';
+                remoteVideoWrap.style.height = '100%';
+            } else {
+                resizeVideoMedia();
+            }
+            const children = videoMediaContainer.children;
+            for (let child of children) {
+                if (child.id != remoteVideoWrap.id) {
+                    child.style.display = isHideALLVideosActive ? 'none' : 'block';
+                }
+            }
+        });
+    }
+}
+
+/**
  * Zoom in/out video element center or by cursor position
  * @param {string} zoomInBtnId
  * @param {string} zoomOutBtnId
@@ -4326,6 +4369,9 @@ function setShareRoomBtn() {
  */
 function setHideMeButton() {
     hideMeBtn.addEventListener('click', (e) => {
+        if (isHideALLVideosActive) {
+            return userLog('toast', 'To use this feature, please toggle video focus mode', 'top-end', 6000);
+        }
         isHideMeActive = !isHideMeActive;
         handleHideMe(isHideMeActive);
     });
@@ -10158,7 +10204,7 @@ function showAbout() {
     Swal.fire({
         background: swBg,
         position: 'center',
-        title: '<strong>WebRTC P2P v1.3.59</strong>',
+        title: '<strong>WebRTC P2P v1.3.62</strong>',
         imageAlt: 'mirotalk-about',
         imageUrl: images.about,
         customClass: { image: 'img-about' },
@@ -10314,16 +10360,28 @@ function bytesToSize(bytes) {
  * @param {object} data peer audio
  */
 function handlePeerVolume(data) {
-    if (!isAudioPitchBar) return;
-    const peer_id = data.peer_id;
+    const { peer_id, volume } = data;
+
+    let audioColorTmp = '#19bb5c';
+    if ([50, 60, 70].includes(volume)) audioColorTmp = '#FFA500'; // Orange
+    if ([80, 90, 100].includes(volume)) audioColorTmp = '#FF0000'; // Red
+
+    if (!isAudioPitchBar) {
+        const remotePeerAvatarImg = getId(peer_id + '_avatar');
+        if (remotePeerAvatarImg) {
+            applyBoxShadowEffect(remotePeerAvatarImg, audioColorTmp, 100);
+        }
+        const remotePeerVideo = getId(peer_id + '___video');
+        if (remotePeerVideo && remotePeerVideo.classList.contains('videoCircle')) {
+            applyBoxShadowEffect(remotePeerVideo, audioColorTmp, 100);
+        }
+        return;
+    }
+
     const remotePitchBar = getId(peer_id + '_pitch_bar');
     //let remoteVideoWrap = getId(peer_id + '_videoWrap');
     if (!remotePitchBar) return;
-
-    const volume = data.volume;
-    if (volume > 50) {
-        remotePitchBar.style.backgroundColor = 'orange';
-    }
+    remotePitchBar.style.backgroundColor = audioColorTmp;
     remotePitchBar.style.height = volume + '%';
     //remoteVideoWrap.classList.toggle('speaking');
     setTimeout(function () {
@@ -10338,12 +10396,23 @@ function handlePeerVolume(data) {
  * @param {object} data my audio
  */
 function handleMyVolume(data) {
-    if (!isAudioPitchBar || !myPitchBar) return;
+    const { volume } = data;
 
-    const volume = data.volume;
-    if (volume > 50) {
-        myPitchBar.style.backgroundColor = 'orange';
+    let audioColorTmp = '#19bb5c';
+    if ([50, 60, 70].includes(volume)) audioColorTmp = '#FFA500'; // Orange
+    if ([80, 90, 100].includes(volume)) audioColorTmp = '#FF0000'; // Red
+
+    if (!isAudioPitchBar || !myPitchBar) {
+        const localPeerAvatarImg = getId('myVideoAvatarImage');
+        if (localPeerAvatarImg) {
+            applyBoxShadowEffect(localPeerAvatarImg, audioColorTmp, 100);
+        }
+        if (myVideo && myVideo.classList.contains('videoCircle')) {
+            applyBoxShadowEffect(myVideo, audioColorTmp, 100);
+        }
+        return;
     }
+    myPitchBar.style.backgroundColor = audioColorTmp;
     myPitchBar.style.height = volume + '%';
     //myVideoWrap.classList.toggle('speaking');
     setTimeout(function () {
@@ -10351,6 +10420,21 @@ function handleMyVolume(data) {
         myPitchBar.style.height = '0%';
         //myVideoWrap.classList.toggle('speaking');
     }, 100);
+}
+
+/**
+ * Apply Box Shadow effect to element
+ * @param {object} element
+ * @param {string} color
+ * @param {integer} delay ms
+ */
+function applyBoxShadowEffect(element, color, delay = 200) {
+    if (element) {
+        element.style.boxShadow = `0 0 20px ${color}`;
+        setTimeout(() => {
+            element.style.boxShadow = 'none';
+        }, delay);
+    }
 }
 
 /**
