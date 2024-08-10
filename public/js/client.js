@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.3.63
+ * @version 1.3.67
  *
  */
 
@@ -159,6 +159,7 @@ const buttons = {
         showRoomEmojiPickerBtn: true,
         showMyHandBtn: true,
         showWhiteboardBtn: true,
+        showSnapshotRoomBtn: true,
         showFileShareBtn: true,
         showDocumentPipBtn: showDocumentPipBtn,
         showMySettingsBtn: true,
@@ -248,6 +249,7 @@ const captionBtn = getId('captionBtn');
 const roomEmojiPickerBtn = getId('roomEmojiPickerBtn');
 const myHandBtn = getId('myHandBtn');
 const whiteboardBtn = getId('whiteboardBtn');
+const snapshotRoomBtn = getId('snapshotRoomBtn');
 const fileShareBtn = getId('fileShareBtn');
 const documentPiPBtn = getId('documentPiPBtn');
 const mySettingsBtn = getId('mySettingsBtn');
@@ -862,6 +864,7 @@ function refreshMainButtonsToolTipPlacement() {
     setTippy(captionBtn, 'Open the caption', placement);
     setTippy(roomEmojiPickerBtn, 'Send reaction', placement);
     setTippy(whiteboardBtn, 'Open the whiteboard', placement);
+    setTippy(snapshotRoomBtn, 'Snapshot screen, windows or tab', placement);
     setTippy(fileShareBtn, 'Share file', placement);
     setTippy(documentPiPBtn, 'Toggle picture in picture', placement);
     setTippy(mySettingsBtn, 'Open the settings', placement);
@@ -1396,6 +1399,7 @@ function handleButtonsRule() {
     elemDisplay(roomEmojiPickerBtn, buttons.main.showRoomEmojiPickerBtn);
     elemDisplay(myHandBtn, buttons.main.showMyHandBtn);
     elemDisplay(whiteboardBtn, buttons.main.showWhiteboardBtn);
+    elemDisplay(snapshotRoomBtn, buttons.main.showSnapshotRoomBtn && !isMobileDevice);
     elemDisplay(fileShareBtn, buttons.main.showFileShareBtn);
     elemDisplay(documentPiPBtn, buttons.main.showDocumentPipBtn);
     elemDisplay(mySettingsBtn, buttons.main.showMySettingsBtn);
@@ -2365,6 +2369,17 @@ function handleDisconnect(reason) {
     for (const peer_id in peerConnections) {
         const peerVideoId = peer_id + '___video';
         const peerAudioId = peer_id + '___audio';
+
+        const peerVideo = getId(peerVideoId);
+        if (peerVideo) {
+            // Peer video in focus mode
+            if (peerVideo.hasAttribute('focus-mode')) {
+                const remoteVideoFocusBtn = getId(peer_id + '_focusMode');
+                if (remoteVideoFocusBtn) {
+                    remoteVideoFocusBtn.click();
+                }
+            }
+        }
         peerVideoMediaElements[peerVideoId].parentNode.removeChild(peerVideoMediaElements[peerVideoId]);
         peerAudioMediaElements[peerAudioId].parentNode.removeChild(peerAudioMediaElements[peerAudioId]);
         peerConnections[peer_id].close();
@@ -2399,6 +2414,16 @@ function handleRemovePeer(config) {
     const peerAudioId = peer_id + '___audio';
 
     if (peerVideoId in peerVideoMediaElements) {
+        const peerVideo = getId(peerVideoId);
+        if (peerVideo) {
+            // Peer video in focus mode
+            if (peerVideo.hasAttribute('focus-mode')) {
+                const remoteVideoFocusBtn = getId(peer_id + '_focusMode');
+                if (remoteVideoFocusBtn) {
+                    remoteVideoFocusBtn.click();
+                }
+            }
+        }
         peerVideoMediaElements[peerVideoId].parentNode.removeChild(peerVideoMediaElements[peerVideoId]);
         adaptAspectRatio();
     }
@@ -3463,7 +3488,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             handleVideoPinUnpin(remoteMedia.id, remoteVideoPinBtn.id, remoteVideoWrap.id, peer_id, peer_screen_status);
 
             // handle video focus mode
-            handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap);
+            handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap, remoteMedia);
 
             // handle video toggle mirror
             handleVideoToggleMirror(remoteMedia.id, remoteVideoMirrorBtn.id);
@@ -4053,8 +4078,9 @@ function toggleVideoPin(position) {
  * Handle video focus mode (hide all except selected one)
  * @param {object} remoteVideoFocusBtn button
  * @param {object} remoteVideoWrap videoWrapper
+ * @param {object} remoteMedia videoMedia
  */
-function handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap) {
+function handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap, remoteMedia) {
     if (remoteVideoFocusBtn) {
         remoteVideoFocusBtn.addEventListener('click', (e) => {
             if (isHideMeActive) {
@@ -4065,8 +4091,10 @@ function handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap) {
             if (isHideALLVideosActive) {
                 remoteVideoWrap.style.width = '100%';
                 remoteVideoWrap.style.height = '100%';
+                remoteMedia.setAttribute('focus-mode', 'true');
             } else {
                 resizeVideoMedia();
+                remoteMedia.removeAttribute('focus-mode');
             }
             const children = videoMediaContainer.children;
             for (let child of children) {
@@ -4348,6 +4376,7 @@ function manageLeftButtons() {
     setChatEmojiBtn();
     setMyHandBtn();
     setMyWhiteboardBtn();
+    setSnapshotRoomBtn();
     setMyFileShareBtn();
     setDocumentPiPBtn();
     setMySettingsBtn();
@@ -4935,6 +4964,64 @@ function setMyFileShareBtn() {
     receiveHideBtn.addEventListener('click', (e) => {
         hideFileTransfer();
     });
+}
+
+/**
+ * Set snapshot room button click event
+ */
+function setSnapshotRoomBtn() {
+    snapshotRoomBtn.addEventListener('click', async (e) => {
+        await snapshotRoom();
+    });
+}
+
+/**
+ * Snapshot Screen, Window or Tab
+ */
+async function snapshotRoom() {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const video = document.createElement('video');
+
+    try {
+        const captureStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+        });
+
+        video.srcObject = captureStream;
+        video.onloadedmetadata = () => {
+            video.play();
+        };
+
+        // Wait for the video to start playing
+        video.onplay = async () => {
+            playSound('snapshot');
+
+            // Sleep some ms
+            await sleep(1000);
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Create a link element to download the image
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'Room_' + roomId + '_' + getDataTimeString() + '_snapshot.png';
+            link.click();
+
+            // Stop all video tracks to release the capture stream
+            captureStream.getTracks().forEach((track) => track.stop());
+
+            // Clean up: remove references to avoid memory leaks
+            video.srcObject = null;
+            canvas.width = 0;
+            canvas.height = 0;
+        };
+    } catch (err) {
+        console.error('Error: ' + err);
+        userLog('error', 'Snapshot room error ' + err.message, 6000);
+    }
 }
 
 /**
@@ -10204,7 +10291,7 @@ function showAbout() {
     Swal.fire({
         background: swBg,
         position: 'center',
-        title: '<strong>WebRTC P2P v1.3.63</strong>',
+        title: '<strong>WebRTC P2P v1.3.67</strong>',
         imageAlt: 'mirotalk-about',
         imageUrl: images.about,
         customClass: { image: 'img-about' },
@@ -10453,7 +10540,7 @@ function userLog(type, message, timer = 3000) {
                 icon: type,
                 title: type,
                 text: message,
-                showClass: { popup: 'animate__animated animate__rubberBand' },
+                showClass: { popup: 'animate__animated animate__fadeInDown' },
                 hideClass: { popup: 'animate__animated animate__fadeOutUp' },
             });
             playSound('alert');
@@ -10750,4 +10837,13 @@ function sanitizeXSS(src) {
  */
 function disable(elem, disabled) {
     elem.disabled = disabled;
+}
+
+/**
+ * Sleep in ms
+ * @param {integer} ms milleseconds
+ * @returns Promise
+ */
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
